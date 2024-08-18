@@ -1,0 +1,92 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:weightSum="3"
+    android:gravity="center">
+
+    <!-- Left Section of Top Container -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="2"
+        android:orientation="vertical" >
+        <!-- Rounds TextView -->
+        <TextView
+            android:id="@+id/tvRoundslabel"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_gravity="center"
+            android:layout_weight=".5"
+            android:text="Rounds"
+            android:textAlignment="center"
+            android:textSize="18sp"
+            android:layout_marginStart="16dp" />
+        <TextView
+            android:id="@+id/tvRounds"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="4"
+            android:text="0"
+            android:textAlignment="center"
+            android:textSize="140sp"
+            android:clickable="true"
+            android:focusable="true"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="50sp"
+            android:autoSizeMaxTextSize="160sp"
+            android:autoSizeStepGranularity="2sp"
+            />
+
+        <!-- Mantras TextView -->
+        <TextView
+            android:id="@+id/tvMantraslabel"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight=".5"
+            android:text="Mantras"
+            android:textAlignment="center"
+            android:textSize="18sp" />
+        <TextView
+            android:id="@+id/tvMantras"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="4"
+            android:text="0"
+            android:textAlignment="center"
+            android:textSize="140sp"
+            android:clickable="true"
+            android:focusable="true"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="50sp"
+            android:autoSizeMaxTextSize="160sp"
+            android:autoSizeStepGranularity="2sp"
+            />
+
+    </LinearLayout>
+    <!-- Right Section of Top Container -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/rvLoglabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Time"
+            android:textAlignment="center"
+            android:textSize="18sp" />
+
+        <!-- Log RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvLog"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="8dp"
+            android:layout_gravity="end" />
+    </LinearLayout>
+
+</LinearLayout>
