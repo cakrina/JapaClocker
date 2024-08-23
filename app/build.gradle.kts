@@ -29,7 +29,7 @@ android {
         versionProps.store(versionPropsFile.outputStream(), null)
 
         versionCode = newVersionCode
-        versionName = "1.05"
+        versionName = versionProps["VERSION_NAME"]?.toString() ?: "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -40,10 +40,11 @@ class MainActivity : AppCompatActivity() {
     private val mantraList =
         mutableListOf<String>() // Use mutable list to add items at the beginning
     private val roundList = mutableListOf<String>()
+    //private var currentClickTime: Long = 0
     private var lastClickTime: Long = 0
-    private var lastClickTimestamp: Long = 0
     private var roundStartTime: Long = 0
     private var roundEndTime: Long = 0
+    private var pauseTimeSum: Float = 0f
 
     private lateinit var clickSound: MediaPlayer
     private lateinit var resetSound: MediaPlayer
@@ -99,11 +100,10 @@ class MainActivity : AppCompatActivity() {
         editor = sharedPreferences.edit()
 
         // Restore saved state
-        clickCount = sharedPreferences.getInt("clickCount", 0)
-        roundCount = clickCount / 108
-        mantraCount = clickCount % 108
+        restoreState()
         updateDisplay()
-        restoreLogListFromCSV()
+
+        lastClickTime = if (lastClickTime == 0L) System.currentTimeMillis() else lastClickTime
 
         tvMantras.setOnClickListener {
             clickEvent()
@@ -171,6 +171,8 @@ class MainActivity : AppCompatActivity() {
         roundCount = 0
         mantraCount = 0
         roundStartTime = 0
+        pauseTimeSum = 0f
+        lastClickTime = System.currentTimeMillis()
         mantraList.clear()
         roundList.clear()
         updateDisplay()
@@ -184,74 +186,55 @@ class MainActivity : AppCompatActivity() {
 
     private fun incrementMantra() {
         val currentClickTime = System.currentTimeMillis()
-        clickCount++
-        roundCount = (clickCount - 1) / 108
-        mantraCount = clickCount - roundCount * 108
+        val clickTime = (currentClickTime - lastClickTime) / 100 / 10f
 
-        // Handle round timing logic
+        if (clickTime > 15) {
+            val pauseTime = clickTime - 10
+            pauseTimeSum += pauseTime
+            mantraList.add(0, "-pause-")
+            mantraAdapter.notifyItemInserted(0)
+            rvMantras.scrollToPosition(0)
+        } else {
+            clickCount++
+            roundCount = (clickCount - 1) / 108
+            mantraCount = clickCount - roundCount * 108
+            val clickTimeStr = clickTime.toString()
+            mantraList.add(0, "$roundCount/$mantraCount - $clickTimeStr")
+            mantraAdapter.notifyItemInserted(0)
+            rvMantras.scrollToPosition(0)
+        }
+
+        lastClickTime = currentClickTime
+
         if (mantraCount == 1) {
             if (roundStartTime != 0L) {
-                // End of the round
                 roundEndTime = currentClickTime
                 val roundTime = (roundEndTime - roundStartTime) / 6000 / 10f
 
-                val roundTimeStr: String = if (roundTime > 99.9) {
-                    "break"
-                } else {
-                    roundTime.toString()
+                if (pauseTimeSum != 0f) {
+                    roundList.add(0, "-pause-")
+                    roundAdapter.notifyItemInserted(0)
+                    rvRounds.scrollToPosition(0)
                 }
-                //old end new start
-                roundStartTime = roundEndTime
-                // You can add `roundTime` to `RoundList` or process it as needed
-                roundList.add(0, "$roundCount - $roundTimeStr")
+                roundList.add(0, "$roundCount - $roundTime")
                 roundAdapter.notifyItemInserted(0)
                 rvRounds.scrollToPosition(0)
 
+                roundStartTime = roundEndTime
+                pauseTimeSum = 0f  // Reset pauseTimeSum for the next round
             } else {
-                // Start of a new round
-                roundStartTime =
-                    currentClickTime - 3000 // Assuming a 3-second delay before the first click
+                roundStartTime = currentClickTime - 3000
             }
-            // roundAdapter.notifyItemInserted(0)
-            //(rvRounds.adapter as LogAdapter).notifyItemInserted(0)
-
         }
-
-        // Handle click timing logic
-
-        val clickTimeStr: String
-
-        if (clickCount == 1) {
-            lastClickTime = currentClickTime
-            clickTimeStr = "--.-"
-        } else {
-            val clickTime = (currentClickTime - lastClickTime) / 100 / 10f
-            lastClickTime = currentClickTime
-
-            clickTimeStr = if (clickTime > 99.9) {
-                "break"
-            } else {
-                clickTime.toString()
-            }
-
-        }
-
-
-        // Add the new log entry to the beginning of the list
-        mantraList.add(0, "$roundCount/$mantraCount - $clickTimeStr")
-
-
-        // Update last click timestamp and play click sound
-        lastClickTimestamp = currentClickTime
     }
 
     private fun clickEvent() {
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastClickTimestamp >= 1000) { // Limit to 1 click per second
+        if (currentTime - lastClickTime >= 1000) { // Limit to 1 click per second
             incrementMantra()
             updateDisplay()
-            mantraAdapter.notifyItemInserted(0)
-            rvMantras.scrollToPosition(0)
+            //mantraAdapter.notifyItemInserted(0)
+            //rvMantras.scrollToPosition(0)
 
             clickSound.start()
         }
@@ -276,6 +259,7 @@ class MainActivity : AppCompatActivity() {
     private fun saveState() {
         // Save click count and log list
         editor.putInt("clickCount", clickCount)
+        editor.putFloat("pauseTimeSum", pauseTimeSum)
         editor.putLong("lastClickTime", lastClickTime)
         editor.putLong("roundStartTime", roundStartTime)
         val roundListString = roundList.joinToString(separator = ",")
@@ -288,6 +272,7 @@ class MainActivity : AppCompatActivity() {
         clickCount = sharedPreferences.getInt("clickCount", 0)
         roundCount = clickCount / 108
         mantraCount = clickCount % 108
+        pauseTimeSum = sharedPreferences.getFloat("pauseTimeSum", 0f)
         lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
         roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
         val roundListString = sharedPreferences.getString("roundList", "")

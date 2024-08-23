@@ -46,7 +46,8 @@
         app:layout_constraintTop_toBottomOf="@id/tvRoundslabel"
         app:layout_constraintLeft_toRightOf="@id/tvRounds"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintBottom_toBottomOf="@id/tvRounds"/>
+        app:layout_constraintBottom_toBottomOf="@id/tvRounds" />
+
     <TextView
         android:id="@+id/tvMantraslabel"
         android:layout_width="0dp"
