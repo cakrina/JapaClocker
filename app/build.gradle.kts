@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -11,8 +13,23 @@ android {
         applicationId = "com.cak.japaclocker"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.04"
+
+        // Version code and version name are defined here
+        val versionPropsFile = file("version.properties")
+        val versionProps = Properties()
+
+        if (versionPropsFile.exists()) {
+            versionProps.load(versionPropsFile.inputStream())
+        }
+
+        val currentVersionCode = versionProps["VERSION_CODE"]?.toString()?.toInt() ?: 1
+        val newVersionCode = currentVersionCode + 1
+
+        versionProps["VERSION_CODE"] = newVersionCode.toString()
+        versionProps.store(versionPropsFile.outputStream(), null)
+
+        versionCode = newVersionCode
+        versionName = "1.05"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,7 +53,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
