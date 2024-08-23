@@ -29,7 +29,10 @@ class ForegroundService : Service() {
     private var mantraCount = 0
     private var lastClickTime: Long = 0
     private var lastClickTimestamp: Long = 0
-    private val logList = mutableListOf<String>()
+    private val MantraList = mutableListOf<String>()
+    private val RoundList = mutableListOf<String>()
+    private var roundStartTime = 0L
+    private var roundEndTime = 0L
     private lateinit var logFileName: File
 
     override fun onCreate() {
@@ -66,10 +69,8 @@ class ForegroundService : Service() {
         editor = sharedPreferences.edit()
         logFileName = File(filesDir, "log_list.csv")
 
-        // restore state
-        clickCount = sharedPreferences.getInt("clickCount", 0)
-        lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
-        restoreLogListFromCSV()
+        restoreState()
+
 
 
         // Prepare the silent player to loop indefinitely
@@ -79,13 +80,21 @@ class ForegroundService : Service() {
         vReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 if (intent.action == "android.media.VOLUME_CHANGED_ACTION") {
-                    // Reset volume to default after the click sound
-                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, defaultVolume, 0)
-                    incrementMantra()
+                    val currentTime = System.currentTimeMillis()
+                    if (currentTime - lastClickTimestamp >= 1000) { // Limit to 1 click per second
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, defaultVolume, 0)
+                        incrementMantra()
+                        //test roundlist
+                        //RoundList.add(0, "test from FG")
+                        saveState()
+                        clickPlayer.start()
+                        lastClickTimestamp = currentTime
 
+                    }
                 }
             }
         }
+
 
         // Register the BroadcastReceiver for volume changes
         registerReceiver(vReceiver, IntentFilter("android.media.VOLUME_CHANGED_ACTION"))
@@ -95,49 +104,101 @@ class ForegroundService : Service() {
     }
     private fun incrementMantra() {
         val currentClickTime = System.currentTimeMillis()
+        clickCount++
+        roundCount = (clickCount - 1) / 108
+        mantraCount = clickCount - roundCount * 108
 
-        if (currentClickTime - lastClickTimestamp >= 1000) { // Limit to 1 click per second
-            clickCount++
-            roundCount = clickCount / 108
-            mantraCount = clickCount % 108
+        // Handle round timing logic
+        if (mantraCount == 1) {
+            if (roundStartTime != 0L) {
+                // End of the round
+                roundEndTime = currentClickTime
+                val roundTime = (roundEndTime - roundStartTime) / 6000 / 10f
+                val roundTimeStr: String
 
-            val clickTimeStr: String
-
-            if (clickCount == 1) {
-                lastClickTime = currentClickTime
-                clickTimeStr = "-.-"
-            } else {
-                val clickTime = (currentClickTime - lastClickTime) / 100 / 10f
-                lastClickTime = currentClickTime
-
-                clickTimeStr = if (clickTime > 99.9) {
-                    "XXXX"
+                if (roundTime > 99.9) {
+                    roundTimeStr = "break"
                 } else {
-                    clickTime.toString()
+                    roundTimeStr = roundTime.toString()
                 }
-            }
-            logList.add(0, "$roundCount:$mantraCount - $clickTimeStr")
+                //old end new start
+                roundStartTime = roundEndTime
+                // You can add `roundTime` to `RoundList` or process it as needed
+                RoundList.add(0, "$roundCount - $roundTimeStr")
 
-            // Update last click timestamp and play click sound
-            lastClickTimestamp = currentClickTime
-            saveState()
-            clickPlayer.start()
+            } else {
+                // Start of a new round
+                roundStartTime =
+                    currentClickTime - 3000 // Assuming a 3-second delay before the first click
+            }
+            editor.putString("roundList", RoundList.joinToString(separator = ","))
+        // roundAdapter.notifyItemInserted(0)
+            //(rvRounds.adapter as LogAdapter).notifyItemInserted(0)
+
         }
+
+        // Handle click timing logic
+
+        val clickTimeStr: String
+
+        if (clickCount == 1) {
+            lastClickTime = currentClickTime
+            clickTimeStr = "--.-"
+        } else {
+            val clickTime = (currentClickTime - lastClickTime) / 100 / 10f
+            lastClickTime = currentClickTime
+
+            clickTimeStr = if (clickTime > 99.9) {
+                "break"
+            } else {
+                clickTime.toString()
+            }
+
+        }
+
+
+        // Add the new log entry to the beginning of the list
+        MantraList.add(0, "$roundCount/$mantraCount - $clickTimeStr")
+
+
+        // Update last click timestamp and play click sound
+        lastClickTimestamp = currentClickTime
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         return START_STICKY
     }
 
     private fun saveState() {
-        editor.putLong("lastClickTime", lastClickTime)
+        // Save click count and log list
         editor.putInt("clickCount", clickCount)
-        editor.apply()
+        editor.putLong("lastClickTime", lastClickTime)
+        editor.putLong("roundStartTime", roundStartTime)
+        val roundListString = RoundList.joinToString(separator = ",")
+        editor.putString("roundList", roundListString)
         saveLogListToCSV()
+        editor.apply()
     }
+
+    private fun restoreState() {
+        clickCount = sharedPreferences.getInt("clickCount", 0)
+        roundCount = clickCount / 108
+        mantraCount = clickCount % 108
+        lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
+        roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
+        val roundListString = sharedPreferences.getString("roundList", "")
+        RoundList.clear()
+        roundListString?.let {
+            if (it.isNotEmpty()) {
+                RoundList.addAll(it.split(","))
+            }
+        }
+        restoreLogListFromCSV()
+    }
+
     private fun saveLogListToCSV() {
         try {
             val fileWriter = FileWriter(logFileName)
-            logList.forEach { logItem ->
+            MantraList.forEach { logItem ->
                 fileWriter.append(logItem).append("\n")
             }
             fileWriter.flush()
@@ -148,14 +209,14 @@ class ForegroundService : Service() {
     }
 
     private fun restoreLogListFromCSV() {
-        logList.clear()
+        MantraList.clear()
         try {
             if (logFileName.exists()) {
                 val bufferedReader = BufferedReader(FileReader(logFileName))
                 var line: String?
                 while (bufferedReader.readLine().also { line = it } != null) {
                     line?.let {
-                        logList.add(it)
+                        MantraList.add(it)
                     }
                 }
                 bufferedReader.close()

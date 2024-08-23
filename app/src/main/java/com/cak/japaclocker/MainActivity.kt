@@ -1,5 +1,9 @@
 package com.cak.japaclocker
 
+import android.annotation.SuppressLint
+import android.content.ClipboardManager
+import android.content.ClipData
+import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
@@ -12,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.NumberPicker
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,18 +27,23 @@ import java.io.BufferedReader
 import java.io.FileReader
 import java.io.IOException
 
+@SuppressLint("NotifyDataSetChanged")
 class MainActivity : AppCompatActivity() {
 
     private lateinit var tvRounds: TextView
     private lateinit var tvMantras: TextView
-    private lateinit var rvLog: RecyclerView
-    private lateinit var logAdapter: LogAdapter
+    private lateinit var rvMantras: RecyclerView
+    private lateinit var rvRounds: RecyclerView
     private var clickCount = 0
     private var roundCount = 0
     private var mantraCount = 0
-    private val logList = mutableListOf<String>() // Use mutable list to add items at the beginning
+    private val mantraList =
+        mutableListOf<String>() // Use mutable list to add items at the beginning
+    private val roundList = mutableListOf<String>()
     private var lastClickTime: Long = 0
     private var lastClickTimestamp: Long = 0
+    private var roundStartTime: Long = 0
+    private var roundEndTime: Long = 0
 
     private lateinit var clickSound: MediaPlayer
     private lateinit var resetSound: MediaPlayer
@@ -42,6 +52,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var editor: SharedPreferences.Editor
     private lateinit var screenLockReceiver: ScreenLockReceiver
     private lateinit var logFileName: File
+    private lateinit var mantraAdapter: LogAdapter
+    private lateinit var roundAdapter: LogAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,13 +62,24 @@ class MainActivity : AppCompatActivity() {
 
         screenLockReceiver = ScreenLockReceiver()
 
+        // Initialize TextViews and RecyclerViews
         tvRounds = findViewById(R.id.tvRounds)
         tvMantras = findViewById(R.id.tvMantras)
-        rvLog = findViewById(R.id.rvLog)
+        rvMantras = findViewById(R.id.rvMantras)
+        rvRounds = findViewById(R.id.rvRounds)
 
-        rvLog.layoutManager = LinearLayoutManager(this)
-        logAdapter = LogAdapter(logList)
-        rvLog.adapter = logAdapter
+        // Set layout managers for RecyclerViews
+        rvMantras.layoutManager = LinearLayoutManager(this)
+        rvRounds.layoutManager = LinearLayoutManager(this)
+
+        // Initialize adapters
+        mantraAdapter = LogAdapter(mantraList)
+        roundAdapter = LogAdapter(roundList)
+
+        // Set adapters to RecyclerViews
+        rvMantras.adapter = mantraAdapter
+        rvRounds.adapter = roundAdapter
+
 
         // Register the ScreenLockReceiver to listen for screen on/off actions
         val filter = IntentFilter().apply {
@@ -68,7 +91,8 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize MediaPlayer
         clickSound = MediaPlayer.create(this, R.raw.click) // Ensure click.mp3 is in res/raw folder
-        resetSound = MediaPlayer.create(this, R.raw.whoosh) // Ensure whoosh.mp3 is in res/raw folder
+        resetSound =
+            MediaPlayer.create(this, R.raw.whoosh) // Ensure whoosh.mp3 is in res/raw folder
 
         // Initialize SharedPreferences
         sharedPreferences = getSharedPreferences("JapaClockPrefs", MODE_PRIVATE)
@@ -133,10 +157,10 @@ class MainActivity : AppCompatActivity() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Reset")
         builder.setMessage("proceed? with reset")
-        builder.setPositiveButton("Yes") { dialog, which ->
+        builder.setPositiveButton("Yes") { _, _ ->
             resetCounts()
         }
-        builder.setNegativeButton("No") { dialog, which ->
+        builder.setNegativeButton("No") { dialog, _ ->
             dialog.dismiss() // Close the dialog
         }
         builder.create().show()
@@ -146,9 +170,12 @@ class MainActivity : AppCompatActivity() {
         clickCount = 0
         roundCount = 0
         mantraCount = 0
-        logList.clear()
+        roundStartTime = 0
+        mantraList.clear()
+        roundList.clear()
         updateDisplay()
-        logAdapter.notifyDataSetChanged()
+        mantraAdapter.notifyDataSetChanged()
+        roundAdapter.notifyDataSetChanged()
         saveState()
 
         // Play reset sound
@@ -157,43 +184,77 @@ class MainActivity : AppCompatActivity() {
 
     private fun incrementMantra() {
         val currentClickTime = System.currentTimeMillis()
+        clickCount++
+        roundCount = (clickCount - 1) / 108
+        mantraCount = clickCount - roundCount * 108
 
-        if (System.currentTimeMillis() - lastClickTimestamp >= 1000) { // Limit to 1 click per second
-            clickCount++
-            roundCount = clickCount / 108
-            mantraCount = clickCount % 108
+        // Handle round timing logic
+        if (mantraCount == 1) {
+            if (roundStartTime != 0L) {
+                // End of the round
+                roundEndTime = currentClickTime
+                val roundTime = (roundEndTime - roundStartTime) / 6000 / 10f
 
-            val clickTimeStr: String
-
-            if (clickCount == 1) {
-                lastClickTime = System.currentTimeMillis()
-                clickTimeStr = "--.-"
-            } else {
-                val clickTime = (System.currentTimeMillis() - lastClickTime) / 100 / 10f
-                lastClickTime = System.currentTimeMillis()
-
-                clickTimeStr = if (clickTime > 99.9) {
+                val roundTimeStr: String = if (roundTime > 99.9) {
                     "break"
                 } else {
-                    clickTime.toString()
+                    roundTime.toString()
                 }
+                //old end new start
+                roundStartTime = roundEndTime
+                // You can add `roundTime` to `RoundList` or process it as needed
+                roundList.add(0, "$roundCount - $roundTimeStr")
+                roundAdapter.notifyItemInserted(0)
+                rvRounds.scrollToPosition(0)
+
+            } else {
+                // Start of a new round
+                roundStartTime =
+                    currentClickTime - 3000 // Assuming a 3-second delay before the first click
+            }
+            // roundAdapter.notifyItemInserted(0)
+            //(rvRounds.adapter as LogAdapter).notifyItemInserted(0)
+
+        }
+
+        // Handle click timing logic
+
+        val clickTimeStr: String
+
+        if (clickCount == 1) {
+            lastClickTime = currentClickTime
+            clickTimeStr = "--.-"
+        } else {
+            val clickTime = (currentClickTime - lastClickTime) / 100 / 10f
+            lastClickTime = currentClickTime
+
+            clickTimeStr = if (clickTime > 99.9) {
+                "break"
+            } else {
+                clickTime.toString()
             }
 
-            // Add the new log entry to the beginning of the list
-            logList.add(0, "$roundCount/$mantraCount - $clickTimeStr")
-
-
-            // Update last click timestamp and play click sound
-            lastClickTimestamp = currentClickTime
-            clickSound.start()
         }
+
+
+        // Add the new log entry to the beginning of the list
+        mantraList.add(0, "$roundCount/$mantraCount - $clickTimeStr")
+
+
+        // Update last click timestamp and play click sound
+        lastClickTimestamp = currentClickTime
     }
 
     private fun clickEvent() {
-        incrementMantra()
-        updateDisplay()
-        logAdapter.notifyItemInserted(0)
-        rvLog.scrollToPosition(0)
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastClickTimestamp >= 1000) { // Limit to 1 click per second
+            incrementMantra()
+            updateDisplay()
+            mantraAdapter.notifyItemInserted(0)
+            rvMantras.scrollToPosition(0)
+
+            clickSound.start()
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -205,8 +266,9 @@ class MainActivity : AppCompatActivity() {
         }
         return super.onKeyDown(keyCode, event)
     }
-
+    @SuppressLint("SetTextI18n")
     private fun updateDisplay() {
+
         tvRounds.text = "$roundCount"
         tvMantras.text = "$mantraCount"
     }
@@ -215,6 +277,9 @@ class MainActivity : AppCompatActivity() {
         // Save click count and log list
         editor.putInt("clickCount", clickCount)
         editor.putLong("lastClickTime", lastClickTime)
+        editor.putLong("roundStartTime", roundStartTime)
+        val roundListString = roundList.joinToString(separator = ",")
+        editor.putString("roundList", roundListString)
         saveLogListToCSV()
         editor.apply()
     }
@@ -224,13 +289,21 @@ class MainActivity : AppCompatActivity() {
         roundCount = clickCount / 108
         mantraCount = clickCount % 108
         lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
+        roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
+        val roundListString = sharedPreferences.getString("roundList", "")
+        roundList.clear()
+        roundListString?.let {
+            if (it.isNotEmpty()) {
+                roundList.addAll(it.split(","))
+            }
+        }
         restoreLogListFromCSV()
     }
 
     private fun saveLogListToCSV() {
         try {
             val fileWriter = FileWriter(logFileName)
-            logList.forEach { logItem ->
+            mantraList.forEach { logItem ->
                 fileWriter.append(logItem).append("\n")
             }
             fileWriter.flush()
@@ -241,14 +314,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun restoreLogListFromCSV() {
-        logList.clear()
+        mantraList.clear()
         try {
             if (logFileName.exists()) {
                 val bufferedReader = BufferedReader(FileReader(logFileName))
                 var line: String?
                 while (bufferedReader.readLine().also { line = it } != null) {
                     line?.let {
-                        logList.add(it)
+                        mantraList.add(it)
                     }
                 }
                 bufferedReader.close()
@@ -270,8 +343,10 @@ class MainActivity : AppCompatActivity() {
         lastClickTime = savedInstanceState.getLong("lastClickTime")
         clickCount = savedInstanceState.getInt("clickCount")
         restoreLogListFromCSV()
+        restoreState()
         updateDisplay()
-        logAdapter.notifyDataSetChanged()
+        mantraAdapter.notifyDataSetChanged()
+        roundAdapter.notifyDataSetChanged()
     }
 
     override fun onPause() {
@@ -285,11 +360,8 @@ class MainActivity : AppCompatActivity() {
         // Restore state
         restoreState()
         updateDisplay()
-        logAdapter.notifyDataSetChanged()
-        val filter = IntentFilter().apply {
-            addAction(Intent.ACTION_SCREEN_OFF)
-            addAction(Intent.ACTION_SCREEN_ON)
-        }
+        mantraAdapter.notifyDataSetChanged()
+        roundAdapter.notifyDataSetChanged()
 
     }
 
@@ -323,10 +395,8 @@ class MainActivity : AppCompatActivity() {
             private val textView: TextView = itemView.findViewById(android.R.id.text1)
 
             fun bind(logItem: String) {
-                // Update the text of the TextView
                 textView.text = logItem
 
-                // Measure the width of the itemView and set the text size accordingly
                 itemView.post {
                     val recyclerViewWidth = itemView.width
                     Log.d("viewsize is ", recyclerViewWidth.toString())
@@ -335,13 +405,24 @@ class MainActivity : AppCompatActivity() {
                         recyclerViewWidth > 200 -> 10f // Medium size
                         else -> 8f // Smaller size for narrower RecyclerView items
                     }
-
-                    // Set the calculated text size
                     textView.textSize = calculatedTextSize
                     textView.gravity = Gravity.END
+                }
+
+                // Add long press listener for copying text to clipboard
+                itemView.setOnLongClickListener {
+                    copyToClipboard(itemView.context, logItems)
+                    true // Return true to indicate the long press was handled
                 }
             }
         }
 
+        private fun copyToClipboard(context: Context, logItems: List<String>) {
+            val entireText = logItems.joinToString(separator = "\n")
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("Copied Text", entireText)
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+        }
     }
 }
