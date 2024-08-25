@@ -1,0 +1,17 @@
+RepoType: git
+Repo: hhttps://github.com/cakrina/JapaClocker
+
+Builds:
+  - versionName: "1.0"
+    versionCode: 1
+    commit: v1.0
+    subdir: app
+    gradle:
+      - yes
+
+AutoUpdateMode: None
+UpdateCheckMode: None
+CurrentVersion: "1.0"
+CurrentVersionCode: 167
+
+
