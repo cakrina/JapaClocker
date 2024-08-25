@@ -30,6 +30,8 @@ android {
 
         versionCode = newVersionCode
         versionName = versionProps["VERSION_NAME"]?.toString() ?: "1.0"
+        //applicationId = "com.cak.japaclocker"
+        //applicationIdSuffix = ".${versionName}-${versionCode}"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
