@@ -1,5 +1,6 @@
 package com.cak.japaclocker
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -39,7 +40,7 @@ class ForegroundService : Service() {
     private val roundList = mutableListOf<String>()
     private var roundStartTime = 0L
     private var roundEndTime = 0L
-    private var pauseTimeSum: Float = 0f
+    private var pauseTimeSum: Long = 0
     private lateinit var logFileName: File
 
     override fun onCreate() {
@@ -110,38 +111,55 @@ class ForegroundService : Service() {
         // Start playing the silent sound to keep media session active
         silentPlayer.start()
     }
+    @SuppressLint("DefaultLocale")
     private fun incrementMantra() {
         val currentClickTime = System.currentTimeMillis()
         val clickTime = (currentClickTime - lastClickTime) / 100 / 10f
 
-        if (clickTime > 15) {
-            val pauseTime = clickTime - 10
-            pauseTimeSum += pauseTime
-            mantraList.add(0, "-pause-")
-        } else {
+        if (clickTime > 30) { // Pause time > 30 seconds no click added only wake up
+            pauseTimeSum +=  currentClickTime - lastClickTime // Add pause time to pauseTimeSum
+            if (clickCount == 0) {lastClickTime = currentClickTime}
+            else {
+                mantraList.add(0, "-pause-") // Add "-pause-" to the list
+                }
+        }
+        else if (clickTime == 0f ){
+            lastClickTime = currentClickTime
+        }
+        else {
             clickCount++
             roundCount = (clickCount - 1) / 108
             mantraCount = clickCount - roundCount * 108
             val clickTimeStr = clickTime.toString()
             mantraList.add(0, "$roundCount/$mantraCount - $clickTimeStr")
         }
-        lastClickTime = currentClickTime
-        if (mantraCount == 1) {
-            if (roundStartTime != 0L) {
-                roundEndTime = currentClickTime
-                val roundTime = (roundEndTime - roundStartTime) / 6000 / 10f
 
-                if (pauseTimeSum != 0f) {
+        if (mantraCount == 1) {
+            if (roundStartTime != 0L) { //normal round
+                roundEndTime = currentClickTime
+                var roundTime = roundEndTime - roundStartTime
+                val roundTimeStr: String
+                if (pauseTimeSum != 0L) {
                     roundList.add(0, "-pause-")
-                }
-                roundList.add(0, "$roundCount - $roundTime")
+                    roundTime -= pauseTimeSum
+                    roundTimeStr = String.format("%.1f", roundTime / 60000f)
+                    if (roundCount != 0 ) {
+                        roundList.add(0, "$roundCount - $roundTimeStr")
+                    }
+                } else {
+                    roundTimeStr = String.format("%.1f", roundTime / 60000f)
+                    roundList.add(0, "$roundCount - $roundTimeStr")
+                    }
+
 
                 roundStartTime = roundEndTime
-                pauseTimeSum = 0f  // Reset pauseTimeSum for the next round
+                pauseTimeSum = 0L  // Reset pauseTimeSum for the next round
             } else {
-                roundStartTime = currentClickTime - 3000
+                roundStartTime = currentClickTime
             }
         }
+        lastClickTime = currentClickTime
+
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -151,9 +169,9 @@ class ForegroundService : Service() {
     private fun saveState() {
         // Save click count and log list
         editor.putInt("clickCount", clickCount)
-        editor.putFloat("pauseTimeSum", pauseTimeSum)
         editor.putLong("lastClickTime", lastClickTime)
         editor.putLong("roundStartTime", roundStartTime)
+        editor.putLong("pauseTimeSum", pauseTimeSum)
         val roundListString = roundList.joinToString(separator = ",")
         editor.putString("roundList", roundListString)
         saveLogListToCSV()
@@ -164,7 +182,7 @@ class ForegroundService : Service() {
         clickCount = sharedPreferences.getInt("clickCount", 0)
         roundCount = clickCount / 108
         mantraCount = clickCount % 108
-        pauseTimeSum = sharedPreferences.getFloat("pauseTimeSum", 0f)
+        pauseTimeSum = sharedPreferences.getLong("pauseTimeSum", 0)
         lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
         roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
         val roundListString = sharedPreferences.getString("roundList", "")
