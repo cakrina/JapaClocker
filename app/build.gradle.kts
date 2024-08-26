@@ -47,3 +47,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
+tasks.register("stage") {
+    dependsOn("build")
+}
+
