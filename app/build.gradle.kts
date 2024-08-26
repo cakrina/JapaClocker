@@ -10,11 +10,10 @@ android {
     defaultConfig {
         applicationId = "com.cak.japaclocker"
         minSdk = 24
-        //noinspection OldTargetApi
         targetSdk = 34
 
         versionName = "1.0"
-        versionCode = 15 
+        versionCode = 1
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,7 +46,3 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
-tasks.register("stage") {
-    dependsOn("build")
-}
-
