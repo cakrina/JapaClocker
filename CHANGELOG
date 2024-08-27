@@ -1,0 +1,7 @@
+v1.0-1
+- Initial release on F-Droid
+- Mantra counter functionality
+- Foreground service with notification support
+- Time tracking and round calculation
+- Pause detection between mantras
+- Simple and user-friendly interface
