@@ -1,0 +1,3 @@
+A simple clicking and clocking application for chanting the Hare Krishna Mahamantra. In modern times, we may not always have a japamala with us, but our phone is surely a constant companion.
+  This app helps you chant the holy names whenever you have free time. It includes features for counting chanted mantras, where 108 mantras equal 1 round, just like using japa beads. The app also tracks the time spent on each mantra and round, with automatic pause estimation for better time calculation. You can reset the count by long-pressing on mantras, set the round number by long-pressing on rounds, and copy time statistics by long-pressing on mantras and round time logs.
+

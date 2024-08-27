@@ -1,0 +1,6 @@
+Version 1.0:
+- Initial release with mantra/round counting, time log with pause calculation.
+- Hardware buttons Vol +/- support
+- Bluetooth remote
+- Locked screen support - keep clicking when screen is off or pocket mode.
+
