@@ -26,26 +26,29 @@ import java.io.FileWriter
 import java.io.BufferedReader
 import java.io.FileReader
 import java.io.IOException
-
+data class ClickRec(val clicknum: Int, val clickTimeStamp: Long, val isPause: Boolean) //new class replacing clicks
 @SuppressLint("NotifyDataSetChanged")
 class MainActivity : AppCompatActivity() {
 
+    //initialize views
     private lateinit var tvRounds: TextView
     private lateinit var tvMantras: TextView
     private lateinit var rvMantras: RecyclerView
     private lateinit var rvRounds: RecyclerView
+
+    //initialize views variables
     private var clickCount = 0
     private var roundCount = 0
     private var mantraCount = 0
-    private val mantraList =
-        mutableListOf<String>() // Use mutable list to add items at the beginning
+    private val mantraList = mutableListOf<String>()
     private val roundList = mutableListOf<String>()
-    //private var currentClickTime: Long = 0
-    private var lastClickTime: Long = 0
+    private var clickTimeStamp: Long = 0
+    private var lastClickTimeStamp: Long = 0
     private var roundStartTime: Long = 0
     private var roundEndTime: Long = 0
     private var pauseTimeSum: Long = 0
-
+    private var pauseOn: Boolean = false
+    private var pauseClear: Boolean = false
     private lateinit var clickSound: MediaPlayer
     private lateinit var resetSound: MediaPlayer
 
@@ -103,7 +106,7 @@ class MainActivity : AppCompatActivity() {
         restoreState()
         updateDisplay()
 
-        lastClickTime = if (lastClickTime == 0L) System.currentTimeMillis() else lastClickTime
+        lastClickTimeStamp = if (lastClickTimeStamp == 0L) System.currentTimeMillis() else lastClickTimeStamp
 
         tvMantras.setOnClickListener {
             clickEvent()
@@ -172,7 +175,7 @@ class MainActivity : AppCompatActivity() {
         mantraCount = 0
         roundStartTime = 0
         pauseTimeSum = 0
-        lastClickTime = System.currentTimeMillis()
+        lastClickTimeStamp = System.currentTimeMillis()
         mantraList.clear()
         roundList.clear()
         updateDisplay()
@@ -186,45 +189,63 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("DefaultLocale")
     private fun incrementMantra() {
-        val currentClickTime = System.currentTimeMillis()
-        lastClickTime = if (lastClickTime==0L) currentClickTime else lastClickTime
-        val clickTime = (currentClickTime - lastClickTime) / 100 / 10f
+        // initialize lastClickTimeStamp
+        lastClickTimeStamp = if (lastClickTimeStamp==0L) clickTimeStamp else lastClickTimeStamp
+        clickTimeStamp = System.currentTimeMillis() // Get current time
+        val clickTime = (clickTimeStamp - lastClickTimeStamp) / 100 / 10f // calculate click time in seconds with 1 decimal
 
-        if (clickTime > 30) { // Pause time > 30 seconds no click added only wake up
-            pauseTimeSum +=  currentClickTime - lastClickTime // Add pause time to pauseTimeSum
-            if (clickCount == 0) {lastClickTime = currentClickTime}
+        if (clickTime > 30) { // Pause time > 30 seconds pause trigger
+            //pauseClear = false
+            pauseTimeSum +=  clickTimeStamp - lastClickTimeStamp // Sum pause times in milliseconds
+            if (clickCount == 0) { // Initial click after reset
+                lastClickTimeStamp = clickTimeStamp // set last click time don't count click use it as a wake up click
+                //pauseClear = true
+            }
             else {
-                mantraList.add(0, "-pause-") // Add "-pause-" to the list
+                pauseOn = true
+                /*mantraList.add(0, "-pause-") // Add "-pause-" to the list
                 mantraAdapter.notifyItemInserted(0)
-                rvMantras.scrollToPosition(0)}
-        } else if (clickTime == 0f) {
-            lastClickTime = currentClickTime
+                rvMantras.scrollToPosition(0)}*/
+            }
+        } else if (clickTime == 0f) { //initial click
+            lastClickTimeStamp = clickTimeStamp
         }
-        else {
+        else { // Normal click
             clickCount++ // count click
             roundCount = (clickCount - 1) / 108
             mantraCount = clickCount - roundCount * 108
             val clickTimeStr = clickTime.toString()
-            mantraList.add(0, "$roundCount/$mantraCount - $clickTimeStr")
+            val pauseOnStr = if (pauseOn) "p-" else ""
+            mantraList.add(0, "$pauseOnStr$roundCount/$mantraCount - $clickTimeStr")
+            if (!pauseClear) { //checking if last is pause and resetting it
+                pauseOn = true //set for red
+                pauseClear = true // set to clear next click
+            } else {
+                pauseOn = false
+            }
             mantraAdapter.notifyItemInserted(0)
             rvMantras.scrollToPosition(0)
+
         }
 
         if (mantraCount == 1) {
             if (roundStartTime != 0L) { //normal round
-                roundEndTime = currentClickTime
+                roundEndTime = clickTimeStamp
                 var roundTime = roundEndTime - roundStartTime
                 val roundTimeStr: String
                 if (pauseTimeSum != 0L) {
-                    roundList.add(0, "-pause-")
+                    /*roundList.add(0, "-pause-")
                     roundAdapter.notifyItemInserted(0)
-                    rvRounds.scrollToPosition(0)
+                    rvRounds.scrollToPosition(0)*/
                     roundTime -= pauseTimeSum
                     roundTimeStr = String.format("%.1f", roundTime / 60000f)
                     if (roundCount != 0 ) {
                         roundList.add(0, "$roundCount - $roundTimeStr")
+                        //pauseRound = true
                         roundAdapter.notifyItemInserted(0)
                         rvRounds.scrollToPosition(0)
+                        //Thread.sleep(100)
+                        //pauseRound = false
                     }
                 } else {
                     roundTimeStr = String.format("%.1f", roundTime / 60000f)
@@ -236,16 +257,16 @@ class MainActivity : AppCompatActivity() {
                 roundStartTime = roundEndTime
                 pauseTimeSum = 0L  // Reset pauseTimeSum for the next round
             } else {
-                roundStartTime = currentClickTime
+                roundStartTime = clickTimeStamp
             }
         }
-        lastClickTime = currentClickTime
+        lastClickTimeStamp = clickTimeStamp
     }
 
 
     private fun clickEvent() {
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastClickTime >= 1000) { // Limit to 1 click per second
+        if (currentTime - lastClickTimeStamp >= 1000) { // Limit to 1 click per second
             incrementMantra()
             updateDisplay()
             //mantraAdapter.notifyItemInserted(0)
@@ -274,7 +295,7 @@ class MainActivity : AppCompatActivity() {
     private fun saveState() {
         // Save click count and log list
         editor.putInt("clickCount", clickCount)
-        editor.putLong("lastClickTime", lastClickTime)
+        editor.putLong("lastClickTime", lastClickTimeStamp)
         editor.putLong("roundStartTime", roundStartTime)
         editor.putLong("pauseTimeSum", pauseTimeSum)
         val roundListString = roundList.joinToString(separator = ",")
@@ -287,7 +308,7 @@ class MainActivity : AppCompatActivity() {
         clickCount = sharedPreferences.getInt("clickCount", 0)
         roundCount = clickCount / 108
         mantraCount = clickCount % 108
-        lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
+        lastClickTimeStamp = sharedPreferences.getLong("lastClickTime", 0)
         roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
         pauseTimeSum = sharedPreferences.getLong("pauseTimeSum", 0)
         val roundListString = sharedPreferences.getString("roundList", "")
@@ -333,14 +354,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putLong("lastClickTime", lastClickTime)
+        outState.putLong("lastClickTime", lastClickTimeStamp)
         outState.putInt("clickCount", clickCount)
         saveLogListToCSV()
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        lastClickTime = savedInstanceState.getLong("lastClickTime")
+        lastClickTimeStamp = savedInstanceState.getLong("lastClickTime")
         clickCount = savedInstanceState.getInt("clickCount")
         restoreLogListFromCSV()
         restoreState()
@@ -392,7 +413,7 @@ class MainActivity : AppCompatActivity() {
 
         inner class LogViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
-            private val textView: TextView = itemView.findViewById(android.R.id.text1)
+            val textView: TextView = itemView.findViewById(android.R.id.text1)
 
             fun bind(logItem: String) {
                 textView.text = logItem
