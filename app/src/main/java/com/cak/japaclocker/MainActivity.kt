@@ -9,7 +9,6 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.media.MediaPlayer
 import android.os.Bundle
-import android.util.Log
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
@@ -26,7 +25,6 @@ import java.io.FileWriter
 import java.io.BufferedReader
 import java.io.FileReader
 import java.io.IOException
-data class ClickRec(val clicknum: Int, val clickTimeStamp: Long, val isPause: Boolean) //new class replacing clicks
 @SuppressLint("NotifyDataSetChanged")
 class MainActivity : AppCompatActivity() {
 
@@ -40,8 +38,8 @@ class MainActivity : AppCompatActivity() {
     private var clickCount = 0
     private var roundCount = 0
     private var mantraCount = 0
-    private val mantraList = mutableListOf<String>()
-    private val roundList = mutableListOf<String>()
+    private val mantraList = mutableListOf<Pair<String, Boolean>>()
+    private val roundList = mutableListOf<Pair<String, Boolean>>()
     private var clickTimeStamp: Long = 0
     private var lastClickTimeStamp: Long = 0
     private var roundStartTime: Long = 0
@@ -187,83 +185,6 @@ class MainActivity : AppCompatActivity() {
         resetSound.start()
     }
 
-    @SuppressLint("DefaultLocale")
-    private fun incrementMantra() {
-        // initialize lastClickTimeStamp
-        lastClickTimeStamp = if (lastClickTimeStamp==0L) clickTimeStamp else lastClickTimeStamp
-        clickTimeStamp = System.currentTimeMillis() // Get current time
-        val clickTime = (clickTimeStamp - lastClickTimeStamp) / 100 / 10f // calculate click time in seconds with 1 decimal
-
-        if (clickTime > 30) { // Pause time > 30 seconds pause trigger
-            //pauseClear = false
-            pauseTimeSum +=  clickTimeStamp - lastClickTimeStamp // Sum pause times in milliseconds
-            if (clickCount == 0) { // Initial click after reset
-                lastClickTimeStamp = clickTimeStamp // set last click time don't count click use it as a wake up click
-                //pauseClear = true
-            }
-            else {
-                pauseOn = true
-                /*mantraList.add(0, "-pause-") // Add "-pause-" to the list
-                mantraAdapter.notifyItemInserted(0)
-                rvMantras.scrollToPosition(0)}*/
-            }
-        } else if (clickTime == 0f) { //initial click
-            lastClickTimeStamp = clickTimeStamp
-        }
-        else { // Normal click
-            clickCount++ // count click
-            roundCount = (clickCount - 1) / 108
-            mantraCount = clickCount - roundCount * 108
-            val clickTimeStr = clickTime.toString()
-            val pauseOnStr = if (pauseOn) "p-" else ""
-            mantraList.add(0, "$pauseOnStr$roundCount/$mantraCount - $clickTimeStr")
-            if (!pauseClear) { //checking if last is pause and resetting it
-                pauseOn = true //set for red
-                pauseClear = true // set to clear next click
-            } else {
-                pauseOn = false
-            }
-            mantraAdapter.notifyItemInserted(0)
-            rvMantras.scrollToPosition(0)
-
-        }
-
-        if (mantraCount == 1) {
-            if (roundStartTime != 0L) { //normal round
-                roundEndTime = clickTimeStamp
-                var roundTime = roundEndTime - roundStartTime
-                val roundTimeStr: String
-                if (pauseTimeSum != 0L) {
-                    /*roundList.add(0, "-pause-")
-                    roundAdapter.notifyItemInserted(0)
-                    rvRounds.scrollToPosition(0)*/
-                    roundTime -= pauseTimeSum
-                    roundTimeStr = String.format("%.1f", roundTime / 60000f)
-                    if (roundCount != 0 ) {
-                        roundList.add(0, "$roundCount - $roundTimeStr")
-                        //pauseRound = true
-                        roundAdapter.notifyItemInserted(0)
-                        rvRounds.scrollToPosition(0)
-                        //Thread.sleep(100)
-                        //pauseRound = false
-                    }
-                } else {
-                    roundTimeStr = String.format("%.1f", roundTime / 60000f)
-                    roundList.add(0, "$roundCount - $roundTimeStr")
-                    roundAdapter.notifyItemInserted(0)
-                    rvRounds.scrollToPosition(0)}
-
-
-                roundStartTime = roundEndTime
-                pauseTimeSum = 0L  // Reset pauseTimeSum for the next round
-            } else {
-                roundStartTime = clickTimeStamp
-            }
-        }
-        lastClickTimeStamp = clickTimeStamp
-    }
-
-
     private fun clickEvent() {
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastClickTimeStamp >= 1000) { // Limit to 1 click per second
@@ -275,6 +196,70 @@ class MainActivity : AppCompatActivity() {
             clickSound.start()
         }
     }
+
+
+    @SuppressLint("DefaultLocale")
+    private fun incrementMantra() {
+        lastClickTimeStamp = if (lastClickTimeStamp == 0L) clickTimeStamp else lastClickTimeStamp
+        clickTimeStamp = System.currentTimeMillis()
+        val clickTime = (clickTimeStamp - lastClickTimeStamp) / 100 / 10f
+
+        if (clickTime > 30) {
+            pauseTimeSum += clickTimeStamp - lastClickTimeStamp
+            if (clickCount == 0) {
+                lastClickTimeStamp = clickTimeStamp
+                pauseOn = false
+            } else {
+                pauseOn = true
+            }
+        } else if (clickTime == 0f) {
+            lastClickTimeStamp = clickTimeStamp
+        } else {
+            clickCount++
+            roundCount = (clickCount - 1) / 108
+            mantraCount = clickCount - roundCount * 108
+            val clickTimeStr = clickTime.toString()
+            mantraList.add(0, Pair("$roundCount/$mantraCount - $clickTimeStr", pauseOn))
+
+            if (!pauseClear) {
+                pauseOn = true
+                pauseClear = true
+            } else {
+                pauseOn = false
+            }
+            mantraAdapter.notifyItemInserted(0)
+            rvMantras.scrollToPosition(0)
+        }
+
+        if (mantraCount == 1) {
+            if (roundStartTime != 0L) {
+                roundEndTime = clickTimeStamp
+                var roundTime = roundEndTime - roundStartTime
+                val roundTimeStr: String
+                if (pauseTimeSum != 0L) {
+                    pauseOn = true
+                    roundTime -= pauseTimeSum
+                    roundTimeStr = String.format("%.1f", roundTime / 60000f)
+                    roundList.add(0, Pair("$roundCount - $roundTimeStr", pauseOn))
+                    roundAdapter.notifyItemInserted(0)
+                    rvRounds.scrollToPosition(0)
+                    Thread.sleep(20)
+                    pauseOn = false
+                } else {
+                    roundTimeStr = String.format("%.1f", roundTime / 60000f)
+                    roundList.add(0, Pair("$roundCount - $roundTimeStr", pauseOn))
+                    roundAdapter.notifyItemInserted(0)
+                    rvRounds.scrollToPosition(0)
+                }
+                roundStartTime = roundEndTime
+                pauseTimeSum = 0L
+            } else {
+                roundStartTime = clickTimeStamp
+            }
+        }
+        lastClickTimeStamp = clickTimeStamp
+    }
+
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         when (keyCode) {
@@ -293,16 +278,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun saveState() {
-        // Save click count and log list
         editor.putInt("clickCount", clickCount)
         editor.putLong("lastClickTime", lastClickTimeStamp)
         editor.putLong("roundStartTime", roundStartTime)
         editor.putLong("pauseTimeSum", pauseTimeSum)
-        val roundListString = roundList.joinToString(separator = ",")
+
+        val roundListString = roundList.joinToString(separator = ";") { "${it.first},${it.second}" }
         editor.putString("roundList", roundListString)
-        saveLogListToCSV()
+
+        val mantraListString = mantraList.joinToString(separator = ";") { "${it.first},${it.second}" }
+        editor.putString("mantraList", mantraListString)
+
         editor.apply()
     }
+
 
     private fun restoreState() {
         clickCount = sharedPreferences.getInt("clickCount", 0)
@@ -311,46 +300,66 @@ class MainActivity : AppCompatActivity() {
         lastClickTimeStamp = sharedPreferences.getLong("lastClickTime", 0)
         roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
         pauseTimeSum = sharedPreferences.getLong("pauseTimeSum", 0)
-        val roundListString = sharedPreferences.getString("roundList", "")
+
         roundList.clear()
-        roundListString?.let {
+        sharedPreferences.getString("roundList", "")?.let {
             if (it.isNotEmpty()) {
-                roundList.addAll(it.split(","))
-            }
-        }
-        restoreLogListFromCSV()
-    }
-
-    private fun saveLogListToCSV() {
-        try {
-            val fileWriter = FileWriter(logFileName)
-            mantraList.forEach { logItem ->
-                fileWriter.append(logItem).append("\n")
-            }
-            fileWriter.flush()
-            fileWriter.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun restoreLogListFromCSV() {
-        mantraList.clear()
-        try {
-            if (logFileName.exists()) {
-                val bufferedReader = BufferedReader(FileReader(logFileName))
-                var line: String?
-                while (bufferedReader.readLine().also { line = it } != null) {
-                    line?.let {
-                        mantraList.add(it)
+                it.split(";").forEach { item ->
+                    val parts = item.split(",")
+                    if (parts.size == 2) {
+                        roundList.add(Pair(parts[0], parts[1].toBoolean()))
                     }
                 }
-                bufferedReader.close()
             }
-        } catch (e: IOException) {
-            e.printStackTrace()
+        }
+
+        mantraList.clear()
+        sharedPreferences.getString("mantraList", "")?.let {
+            if (it.isNotEmpty()) {
+                it.split(";").forEach { item ->
+                    val parts = item.split(",")
+                    if (parts.size == 2) {
+                        mantraList.add(Pair(parts[0], parts[1].toBoolean()))
+                    }
+                }
+            }
         }
     }
+
+
+    private fun saveLogListToCSV() {
+    try {
+        val fileWriter = FileWriter(logFileName)
+        mantraList.forEach { logItem ->
+            fileWriter.append("${logItem.first},${logItem.second}\n")
+        }
+        fileWriter.flush()
+        fileWriter.close()
+    } catch (e: IOException) {
+        e.printStackTrace()
+    }
+}
+
+private fun restoreLogListFromCSV() {
+    mantraList.clear()
+    try {
+        if (logFileName.exists()) {
+            val bufferedReader = BufferedReader(FileReader(logFileName))
+            var line: String?
+            while (true) {
+                line = bufferedReader.readLine()
+                if (line == null) break
+                val parts = line.split(",")
+                if (parts.size == 2) {
+                    mantraList.add(parts[0] to parts[1].toBoolean())
+                }
+            }
+            bufferedReader.close()
+        }
+    } catch (e: IOException) {
+        e.printStackTrace()
+    }
+}
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -395,55 +404,54 @@ class MainActivity : AppCompatActivity() {
         unregisterReceiver(screenLockReceiver)
     }
 
-    private inner class LogAdapter(private val logItems: MutableList<String>) :
-        RecyclerView.Adapter<LogAdapter.LogViewHolder>() {
+private inner class LogAdapter(private val logItems: MutableList<Pair<String, Boolean>>) :
+    RecyclerView.Adapter<LogAdapter.LogViewHolder>() {
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LogViewHolder {
-            val view = layoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false)
-            return LogViewHolder(view)
-        }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LogViewHolder {
+        val view = layoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false)
+        return LogViewHolder(view)
+    }
 
-        override fun onBindViewHolder(holder: LogViewHolder, position: Int) {
-            holder.bind(logItems[position])
-        }
+    override fun onBindViewHolder(holder: LogViewHolder, position: Int) {
+        holder.bind(logItems[position])
+    }
 
-        override fun getItemCount(): Int {
-            return logItems.size
-        }
+    override fun getItemCount(): Int {
+        return logItems.size
+    }
 
-        inner class LogViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    inner class LogViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val textView: TextView = itemView.findViewById(android.R.id.text1)
 
-            val textView: TextView = itemView.findViewById(android.R.id.text1)
+        fun bind(logItem: Pair<String, Boolean>) {
+            textView.text = logItem.first
+            textView.setTextColor(if (logItem.second) android.graphics.Color.RED else android.graphics.Color.BLACK)
 
-            fun bind(logItem: String) {
-                textView.text = logItem
-
-                itemView.post {
-                    val recyclerViewWidth = itemView.width
-                    Log.d("viewsize is ", recyclerViewWidth.toString())
-                    val calculatedTextSize = when {
-                        recyclerViewWidth > 300 -> 14f // Larger size for wider RecyclerView items
-                        recyclerViewWidth > 200 -> 10f // Medium size
-                        else -> 8f // Smaller size for narrower RecyclerView items
-                    }
-                    textView.textSize = calculatedTextSize
-                    textView.gravity = Gravity.END
+            itemView.post {
+                val recyclerViewWidth = itemView.width
+                val calculatedTextSize = when {
+                    recyclerViewWidth > 300 -> 14f
+                    recyclerViewWidth > 200 -> 10f
+                    else -> 8f
                 }
+                textView.textSize = calculatedTextSize
+                textView.gravity = Gravity.END
+            }
 
-                // Add long press listener for copying text to clipboard
-                itemView.setOnLongClickListener {
-                    copyToClipboard(itemView.context, logItems)
-                    true // Return true to indicate the long press was handled
-                }
+            itemView.setOnLongClickListener {
+                copyToClipboard(itemView.context, logItems)
+                true
             }
         }
+    }
 
-        private fun copyToClipboard(context: Context, logItems: List<String>) {
-            val entireText = logItems.joinToString(separator = "\n")
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("Copied Text", entireText)
-            clipboard.setPrimaryClip(clip)
-            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
-        }
+    private fun copyToClipboard(context: Context, logItems: List<Pair<String, Boolean>>) {
+        val entireText = logItems.joinToString(separator = "\n") { it.first }
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("Copied Text", entireText)
+        clipboard.setPrimaryClip(clip)
+        Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
     }
 }
+}
+
