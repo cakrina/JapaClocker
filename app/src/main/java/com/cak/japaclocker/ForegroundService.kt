@@ -31,13 +31,17 @@ class ForegroundService : Service() {
     private lateinit var editor: SharedPreferences.Editor
     private var defaultVolume: Int = 0
     private lateinit var audioManager: AudioManager
+    private val mala = 108
+    private val timeout = 30
+    private var lastMantraIsPause: Boolean = false
+    private var lastRoundIsPause: Boolean = false
     private var clickCount = 0
     private var roundCount = 0
     private var mantraCount = 0
     private var lastClickTime: Long = 0
     private var lastClickTimestamp: Long = 0
-    private val mantraList = mutableListOf<String>()
-    private val roundList = mutableListOf<String>()
+    private val mantraList = mutableListOf<Pair<String, Boolean>>()
+    private val roundList = mutableListOf<Pair<String, Boolean>>()
     private var roundStartTime = 0L
     private var roundEndTime = 0L
     private var pauseTimeSum: Long = 0
@@ -114,52 +118,42 @@ class ForegroundService : Service() {
     @SuppressLint("DefaultLocale")
     private fun incrementMantra() {
         val currentClickTime = System.currentTimeMillis()
+        lastClickTime = if (lastClickTime==0L) currentClickTime else lastClickTime
         val clickTime = (currentClickTime - lastClickTime) / 100 / 10f
 
-        if (clickTime > 30) { // Pause time > 30 seconds no click added only wake up
+        if (clickTime > timeout) { // Pause time > 30 seconds no click added only wake up
             pauseTimeSum +=  currentClickTime - lastClickTime // Add pause time to pauseTimeSum
             if (clickCount == 0) {lastClickTime = currentClickTime}
             else {
-                mantraList.add(0, "-pause-") // Add "-pause-" to the list
-                }
-        }
-        else if (clickTime == 0f ){
+                lastMantraIsPause = true
+            }
+        } else if (clickTime == 0f) {
             lastClickTime = currentClickTime
         }
         else {
-            clickCount++
-            roundCount = (clickCount - 1) / 108
-            mantraCount = clickCount - roundCount * 108
+            clickCount++ // count click
+            roundCount = (clickCount - 1) / mala
+            mantraCount = clickCount - roundCount * mala
             val clickTimeStr = clickTime.toString()
-            mantraList.add(0, "$roundCount/$mantraCount - $clickTimeStr")
+            mantraList.add(0, Pair("$roundCount/$mantraCount - $clickTimeStr",lastMantraIsPause))
+            Thread.sleep(50)
+            lastMantraIsPause = false
         }
 
-        if (mantraCount == 1) {
-            if (roundStartTime != 0L) { //normal round
+        if (mantraCount == 1 && !lastMantraIsPause) {
+            if (roundCount == 0) {
+                roundStartTime = currentClickTime
+            } else {
                 roundEndTime = currentClickTime
-                var roundTime = roundEndTime - roundStartTime
-                val roundTimeStr: String
-                if (pauseTimeSum != 0L) {
-                    roundList.add(0, "-pause-")
-                    roundTime -= pauseTimeSum
-                    roundTimeStr = String.format("%.1f", roundTime / 60000f)
-                    if (roundCount != 0 ) {
-                        roundList.add(0, "$roundCount - $roundTimeStr")
-                    }
-                } else {
-                    roundTimeStr = String.format("%.1f", roundTime / 60000f)
-                    roundList.add(0, "$roundCount - $roundTimeStr")
-                    }
-
-
+                val roundTime = roundEndTime - roundStartTime - pauseTimeSum
+                lastRoundIsPause = pauseTimeSum != 0L
+                val roundTimeStr = String.format("%.1f", roundTime / 60000f)
+                roundList.add(0, Pair("$roundCount - $roundTimeStr",lastRoundIsPause))
                 roundStartTime = roundEndTime
                 pauseTimeSum = 0L  // Reset pauseTimeSum for the next round
-            } else {
-                roundStartTime = currentClickTime
             }
         }
         lastClickTime = currentClickTime
-
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -167,29 +161,49 @@ class ForegroundService : Service() {
     }
 
     private fun saveState() {
-        // Save click count and log list
         editor.putInt("clickCount", clickCount)
         editor.putLong("lastClickTime", lastClickTime)
         editor.putLong("roundStartTime", roundStartTime)
         editor.putLong("pauseTimeSum", pauseTimeSum)
-        val roundListString = roundList.joinToString(separator = ",")
+
+        val roundListString = roundList.joinToString(separator = ";") { "${it.first},${it.second}" }
         editor.putString("roundList", roundListString)
-        saveLogListToCSV()
+
+        val mantraListString = mantraList.joinToString(separator = ";") { "${it.first},${it.second}" }
+        editor.putString("mantraList", mantraListString)
         editor.apply()
+        saveLogListToCSV()
     }
 
     private fun restoreState() {
         clickCount = sharedPreferences.getInt("clickCount", 0)
-        roundCount = clickCount / 108
-        mantraCount = clickCount % 108
-        pauseTimeSum = sharedPreferences.getLong("pauseTimeSum", 0)
+        roundCount = clickCount / mala
+        mantraCount = clickCount % mala
         lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
         roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
-        val roundListString = sharedPreferences.getString("roundList", "")
+        pauseTimeSum = sharedPreferences.getLong("pauseTimeSum", 0)
+
         roundList.clear()
-        roundListString?.let {
+        sharedPreferences.getString("roundList", "")?.let {
             if (it.isNotEmpty()) {
-                roundList.addAll(it.split(","))
+                it.split(";").forEach { item ->
+                    val parts = item.split(",")
+                    if (parts.size == 2) {
+                        roundList.add(Pair(parts[0], parts[1].toBoolean()))
+                    }
+                }
+            }
+        }
+
+        mantraList.clear()
+        sharedPreferences.getString("mantraList", "")?.let {
+            if (it.isNotEmpty()) {
+                it.split(";").forEach { item ->
+                    val parts = item.split(",")
+                    if (parts.size == 2) {
+                        mantraList.add(Pair(parts[0], parts[1].toBoolean()))
+                    }
+                }
             }
         }
         restoreLogListFromCSV()
@@ -199,7 +213,7 @@ class ForegroundService : Service() {
         try {
             val fileWriter = FileWriter(logFileName)
             mantraList.forEach { logItem ->
-                fileWriter.append(logItem).append("\n")
+                fileWriter.append("${logItem.first},${logItem.second}\n")
             }
             fileWriter.flush()
             fileWriter.close()
@@ -214,9 +228,12 @@ class ForegroundService : Service() {
             if (logFileName.exists()) {
                 val bufferedReader = BufferedReader(FileReader(logFileName))
                 var line: String?
-                while (bufferedReader.readLine().also { line = it } != null) {
-                    line?.let {
-                        mantraList.add(it)
+                while (true) {
+                    line = bufferedReader.readLine()
+                    if (line == null) break
+                    val parts = line.split(",")
+                    if (parts.size == 2) {
+                        mantraList.add(parts[0] to parts[1].toBoolean())
                     }
                 }
                 bufferedReader.close()
