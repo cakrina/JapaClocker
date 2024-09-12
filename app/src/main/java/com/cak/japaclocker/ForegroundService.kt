@@ -16,11 +16,6 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileReader
-import java.io.FileWriter
-import java.io.IOException
 
 class ForegroundService : Service() {
 
@@ -45,7 +40,6 @@ class ForegroundService : Service() {
     private var roundStartTime = 0L
     private var roundEndTime = 0L
     private var pauseTimeSum: Long = 0
-    private lateinit var logFileName: File
 
     override fun onCreate() {
         super.onCreate()
@@ -82,7 +76,6 @@ class ForegroundService : Service() {
         // Initialize SharedPreferences
         sharedPreferences = getSharedPreferences("JapaClockPrefs", MODE_PRIVATE)
         editor = sharedPreferences.edit()
-        logFileName = File(filesDir, "log_list.csv")
 
         restoreState()
 
@@ -172,7 +165,6 @@ class ForegroundService : Service() {
         val mantraListString = mantraList.joinToString(separator = ";") { "${it.first},${it.second}" }
         editor.putString("mantraList", mantraListString)
         editor.apply()
-        saveLogListToCSV()
     }
 
     private fun restoreState() {
@@ -206,46 +198,12 @@ class ForegroundService : Service() {
                 }
             }
         }
-        restoreLogListFromCSV()
-    }
-
-    private fun saveLogListToCSV() {
-        try {
-            val fileWriter = FileWriter(logFileName)
-            mantraList.forEach { logItem ->
-                fileWriter.append("${logItem.first},${logItem.second}\n")
-            }
-            fileWriter.flush()
-            fileWriter.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun restoreLogListFromCSV() {
-        mantraList.clear()
-        try {
-            if (logFileName.exists()) {
-                val bufferedReader = BufferedReader(FileReader(logFileName))
-                var line: String?
-                while (true) {
-                    line = bufferedReader.readLine()
-                    if (line == null) break
-                    val parts = line.split(",")
-                    if (parts.size == 2) {
-                        mantraList.add(parts[0] to parts[1].toBoolean())
-                    }
-                }
-                bufferedReader.close()
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         // Stop and release MediaPlayer resources
+        saveState()
         silentPlayer.stop()
         silentPlayer.release()
         clickPlayer.release()

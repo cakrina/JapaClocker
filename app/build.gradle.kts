@@ -1,3 +1,7 @@
+import com.android.build.gradle.internal.api.ApkVariantOutputImpl
+import org.gradle.kotlin.dsl.support.uppercaseFirstChar
+
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -9,11 +13,13 @@ android {
 
     defaultConfig {
         applicationId = "com.cak.japaclocker"
-        minSdk = 24
+        minSdk = 23
+        //noinspection OldTargetApi
         targetSdk = 34
 
-        versionName = "1.0"
-        versionCode = 1
+        versionCode = 3
+        versionName = "1.2"
+
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -30,6 +36,27 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        applicationVariants.configureEach {
+            // rename the output APK file
+            outputs.configureEach {
+                (this as? ApkVariantOutputImpl)?.outputFileName =
+                    "${namespace}_${versionName}-${versionCode}_${buildType.name}.apk"
+            }
+
+            // rename the output AAB file
+            tasks.named(
+                "sign${flavorName.uppercaseFirstChar()}${buildType.name.uppercaseFirstChar()}Bundle",
+                com.android.build.gradle.internal.tasks.FinalizeBundleTask::class.java
+            ) {
+                val file = finalBundleFile.asFile.get()
+                val finalFile =
+                    File(
+                        file.parentFile,
+                        "${namespace}_$versionName-{$versionCode}_${buildType.name}.aab"
+                    )
+                finalBundleFile.set(finalFile)
+            }
+        }
     }
     kotlinOptions {
         jvmTarget = "1.8"

@@ -20,11 +20,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import java.io.File
-import java.io.FileWriter
-import java.io.BufferedReader
-import java.io.FileReader
-import java.io.IOException
+import kotlin.math.round
 
 @SuppressLint("NotifyDataSetChanged")
 class MainActivity : AppCompatActivity() {
@@ -33,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvMantras: TextView
     private lateinit var rvMantras: RecyclerView
     private lateinit var rvRounds: RecyclerView
+    private var currentColor: Int = 0
     private var clickCount = 0
     private var roundCount = 0
     private var mantraCount = 0
@@ -42,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     private val timeout = 30
     private var lastMantraIsPause: Boolean = false
     private var lastRoundIsPause: Boolean = false
+    private var roundsSetManual: Boolean = false
     private var lastClickTime: Long = 0
     private var roundStartTime: Long = 0
     private var roundEndTime: Long = 0
@@ -53,19 +51,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var editor: SharedPreferences.Editor
     private lateinit var screenLockReceiver: ScreenLockReceiver
-    private lateinit var logFileName: File
     private lateinit var mantraAdapter: LogAdapter
     private lateinit var roundAdapter: LogAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        logFileName = File(filesDir, "log_list.csv")
-
         screenLockReceiver = ScreenLockReceiver()
 
         // Initialize TextViews and RecyclerViews
         tvRounds = findViewById(R.id.tvRounds)
+        currentColor = tvRounds.currentTextColor
         tvMantras = findViewById(R.id.tvMantras)
         rvMantras = findViewById(R.id.rvMantras)
         rvRounds = findViewById(R.id.rvRounds)
@@ -139,9 +135,11 @@ class MainActivity : AppCompatActivity() {
                 clickCount = rounds * mala
                 roundCount = clickCount / mala
                 mantraCount = 0
+                lastClickTime = System.currentTimeMillis()
                 updateDisplay()
                 saveState()
                 dialog.dismiss()
+                roundsSetManual = true
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.cancel()
@@ -208,8 +206,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (mantraCount == 1 && !lastMantraIsPause) {
-            if (roundCount == 0) {
+            if (roundCount == 0 || roundsSetManual) {
                 roundStartTime = currentClickTime
+                roundsSetManual = false
             } else {
                 roundEndTime = currentClickTime
                 val roundTime = roundEndTime - roundStartTime - pauseTimeSum
@@ -302,53 +301,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveLogListToCSV() {
-        try {
-            val fileWriter = FileWriter(logFileName)
-            mantraList.forEach { logItem ->
-                fileWriter.append("${logItem.first},${logItem.second}\n")
-            }
-            fileWriter.flush()
-            fileWriter.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun restoreLogListFromCSV() {
-        mantraList.clear()
-        try {
-            if (logFileName.exists()) {
-                val bufferedReader = BufferedReader(FileReader(logFileName))
-                var line: String?
-                while (true) {
-                    line = bufferedReader.readLine()
-                    if (line == null) break
-                    val parts = line.split(",")
-                    if (parts.size == 2) {
-                        mantraList.add(parts[0] to parts[1].toBoolean())
-                    }
-                }
-                bufferedReader.close()
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putLong("lastClickTime", lastClickTime)
-        outState.putInt("clickCount", clickCount)
-        saveLogListToCSV()
+        saveState()
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        lastClickTime = savedInstanceState.getLong("lastClickTime")
-        clickCount = savedInstanceState.getInt("clickCount")
-        restoreLogListFromCSV()
         restoreState()
         updateDisplay()
         mantraAdapter.notifyDataSetChanged()
@@ -364,6 +323,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         // Restore state
+        currentColor = tvRounds.currentTextColor
         restoreState()
         updateDisplay()
         mantraAdapter.notifyDataSetChanged()
@@ -376,6 +336,8 @@ class MainActivity : AppCompatActivity() {
         saveState()
         clickSound.release()
         resetSound.release()
+        val serviceIntent = Intent(this, ForegroundService::class.java)
+        stopService(serviceIntent)
         // Unregister the ScreenLockReceiver when the activity is paused
         unregisterReceiver(screenLockReceiver)
     }
@@ -398,7 +360,6 @@ class MainActivity : AppCompatActivity() {
 
         inner class LogViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             val textView: TextView = itemView.findViewById(android.R.id.text1)
-            val currentColor = textView.currentTextColor
 
             fun bind(logItem: Pair<String, Boolean>) {
                 textView.text = logItem.first

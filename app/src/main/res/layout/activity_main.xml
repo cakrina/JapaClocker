@@ -37,7 +37,7 @@
         app:layout_constraintRight_toRightOf="@id/tvRoundslabel"
         app:layout_constraintHeight_percent=".45"
         android:textAlignment="center"
-        android:textSize="140sp"/>
+        android:textSize="120sp"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvRounds"
@@ -47,6 +47,14 @@
         app:layout_constraintLeft_toRightOf="@id/tvRounds"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintBottom_toBottomOf="@id/tvRounds" />
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintHeight_percent=".35"
+        app:layout_constraintLeft_toRightOf="@id/tvRounds"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintBottom_toBottomOf="@id/tvRounds"
+        android:background="@drawable/gradient" />
 
     <TextView
         android:id="@+id/tvMantraslabel"
@@ -80,7 +88,7 @@
         app:layout_constraintRight_toRightOf="@id/tvMantraslabel"
         app:layout_constraintBottom_toBottomOf="parent"
         android:textAlignment="center"
-        android:textSize="140sp" />
+        android:textSize="120sp" />
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvMantras"
         android:layout_width="0dp"
@@ -89,4 +97,12 @@
         app:layout_constraintLeft_toRightOf="@id/tvMantras"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"/>
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintHeight_percent=".35"
+        app:layout_constraintLeft_toRightOf="@id/tvMantras"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:background="@drawable/gradient" />
 </androidx.constraintlayout.widget.ConstraintLayout>
