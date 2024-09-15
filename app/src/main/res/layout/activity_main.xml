@@ -6,14 +6,28 @@
     android:layout_height="match_parent"
     tools:ignore="HardcodedText">
 
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintHeight_percent=".05"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:elevation="4dp"
+        android:background="@color/material_on_surface_stroke"
+        android:title="Japa Clocker"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar" />
+
     <TextView
         android:id="@+id/tvRoundslabel"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintWidth_percent="0.7"
         app:layout_constraintHeight_percent=".05"
+        android:background="@color/material_on_surface_stroke"
         android:text="Rounds"
         android:textAlignment="center"
         android:textSize="22sp" />
@@ -21,10 +35,12 @@
         android:id="@+id/rvRoundslabel"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintLeft_toRightOf="@id/tvRoundslabel"
-        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintRight_toLeftOf="@id/tvRoundslabel"
+        app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintBottom_toBottomOf="@+id/tvRoundslabel"
+        android:background="@color/material_on_surface_stroke"
+
         android:text="Minutes"
         android:textAlignment="center"
         android:textSize="22sp" />
@@ -33,9 +49,9 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/tvRoundslabel"
-        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintLeft_toLeftOf="@id/tvRoundslabel"
         app:layout_constraintRight_toRightOf="@id/tvRoundslabel"
-        app:layout_constraintHeight_percent=".45"
+        app:layout_constraintHeight_percent=".375"
         android:textAlignment="center"
         android:textSize="120sp"/>
 
@@ -43,16 +59,16 @@
         android:id="@+id/rvRounds"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/tvRoundslabel"
-        app:layout_constraintLeft_toRightOf="@id/tvRounds"
-        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/rvRoundslabel"
+        app:layout_constraintLeft_toLeftOf="@id/rvRoundslabel"
+        app:layout_constraintRight_toRightOf="@id/rvRoundslabel"
         app:layout_constraintBottom_toBottomOf="@id/tvRounds" />
     <View
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintHeight_percent=".35"
-        app:layout_constraintLeft_toRightOf="@id/tvRounds"
-        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintHeight_percent=".3"
+        app:layout_constraintLeft_toLeftOf="@id/rvRoundslabel"
+        app:layout_constraintRight_toRightOf="@id/rvRoundslabel"
         app:layout_constraintBottom_toBottomOf="@id/tvRounds"
         android:background="@drawable/gradient" />
 
@@ -60,10 +76,11 @@
         android:id="@+id/tvMantraslabel"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvRounds"
-        app:layout_constraintRight_toRightOf="@id/tvRounds"
+        app:layout_constraintLeft_toLeftOf="@id/tvRoundslabel"
+        app:layout_constraintRight_toRightOf="@id/tvRoundslabel"
         app:layout_constraintHeight_percent=".05"
+        android:background="@color/material_on_surface_stroke"
         android:text="Mantras"
         android:textAlignment="center"
         android:textSize="22sp"/>
@@ -71,10 +88,11 @@
         android:id="@+id/rvMantraslabel"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintLeft_toRightOf="@id/tvMantraslabel"
         app:layout_constraintTop_toBottomOf="@id/rvRounds"
-        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintLeft_toLeftOf="@id/rvRoundslabel"
+        app:layout_constraintRight_toRightOf="@id/rvRoundslabel"
         app:layout_constraintBottom_toBottomOf="@id/tvMantraslabel"
+        android:background="@color/material_on_surface_stroke"
         android:text="Seconds"
         android:textAlignment="center"
         android:textSize="22sp"
@@ -83,9 +101,9 @@
         android:id="@+id/tvMantras"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintLeft_toLeftOf="@id/tvMantraslabel"
         app:layout_constraintTop_toBottomOf="@id/tvMantraslabel"
-        app:layout_constraintRight_toRightOf="@id/tvMantraslabel"
+        app:layout_constraintLeft_toLeftOf="@id/tvRoundslabel"
+        app:layout_constraintRight_toRightOf="@id/tvRoundslabel"
         app:layout_constraintBottom_toBottomOf="parent"
         android:textAlignment="center"
         android:textSize="120sp" />
@@ -94,15 +112,15 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/rvMantraslabel"
-        app:layout_constraintLeft_toRightOf="@id/tvMantras"
-        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintLeft_toLeftOf="@id/rvRoundslabel"
+        app:layout_constraintRight_toRightOf="@id/rvRoundslabel"
         app:layout_constraintBottom_toBottomOf="parent"/>
     <View
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintHeight_percent=".35"
-        app:layout_constraintLeft_toRightOf="@id/tvMantras"
-        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintHeight_percent=".3"
+        app:layout_constraintLeft_toLeftOf="@id/rvRoundslabel"
+        app:layout_constraintRight_toRightOf="@id/rvRoundslabel"
         app:layout_constraintBottom_toBottomOf="parent"
         android:background="@drawable/gradient" />
 </androidx.constraintlayout.widget.ConstraintLayout>

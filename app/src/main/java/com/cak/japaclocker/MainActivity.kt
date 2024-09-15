@@ -1,8 +1,8 @@
 package com.cak.japaclocker
 
 import android.annotation.SuppressLint
-import android.content.ClipboardManager
 import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -11,6 +11,8 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.NumberPicker
@@ -18,9 +20,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlin.math.round
 
 @SuppressLint("NotifyDataSetChanged")
 class MainActivity : AppCompatActivity() {
@@ -58,6 +60,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         screenLockReceiver = ScreenLockReceiver()
+
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
 
         // Initialize TextViews and RecyclerViews
         tvRounds = findViewById(R.id.tvRounds)
@@ -373,7 +378,7 @@ class MainActivity : AppCompatActivity() {
                         else -> 8f
                     }
                     textView.textSize = calculatedTextSize
-                    textView.gravity = Gravity.END
+                    textView.gravity = Gravity.START
                 }
 
                 itemView.setOnLongClickListener {
