@@ -26,8 +26,9 @@ class ForegroundService : Service() {
     private lateinit var editor: SharedPreferences.Editor
     private var defaultVolume: Int = 0
     private lateinit var audioManager: AudioManager
-    private val mala = 108
-    private val timeout = 30
+    private var mala = 108
+    private var pauseTimeout = 30
+    private var mantraTimeout: Long = 1000
     private var lastMantraIsPause: Boolean = false
     private var lastRoundIsPause: Boolean = false
     private var clickCount = 0
@@ -89,7 +90,7 @@ class ForegroundService : Service() {
             override fun onReceive(context: Context, intent: Intent) {
                 if (intent.action == "android.media.VOLUME_CHANGED_ACTION") {
                     val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastClickTimestamp >= 1000) { // Limit to 1 click per second
+                    if (currentTime - lastClickTimestamp >= mantraTimeout) { // Limit to 1 click per second
                         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, defaultVolume, 0)
                         incrementMantra()
                         saveState()
@@ -114,7 +115,7 @@ class ForegroundService : Service() {
         lastClickTime = if (lastClickTime==0L) currentClickTime else lastClickTime
         val clickTime = (currentClickTime - lastClickTime) / 100 / 10f
 
-        if (clickTime > timeout) { // Pause time > 30 seconds no click added only wake up
+        if (clickTime > pauseTimeout) { // Pause time > 30 seconds no click added only wake up
             pauseTimeSum +=  currentClickTime - lastClickTime // Add pause time to pauseTimeSum
             if (clickCount == 0) {lastClickTime = currentClickTime}
             else {

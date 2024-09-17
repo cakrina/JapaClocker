@@ -15,6 +15,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.NumberPicker
 import android.widget.TextView
 import android.widget.Toast
@@ -37,8 +38,9 @@ class MainActivity : AppCompatActivity() {
     private var mantraCount = 0
     private val mantraList = mutableListOf<Pair<String, Boolean>>()
     private val roundList = mutableListOf<Pair<String, Boolean>>()
-    private val mala = 108
-    private val timeout = 30
+    private var mala = 108
+    private var pauseTimeout = 30
+    private var mantraTimout: Long = 1000
     private var lastMantraIsPause: Boolean = false
     private var lastRoundIsPause: Boolean = false
     private var roundsSetManual: Boolean = false
@@ -189,7 +191,7 @@ class MainActivity : AppCompatActivity() {
         lastClickTime = if (lastClickTime==0L) currentClickTime else lastClickTime
         val clickTime = (currentClickTime - lastClickTime) / 100 / 10f
 
-        if (clickTime > timeout) { // Pause time > 30 seconds no click added only wake up
+        if (clickTime > pauseTimeout) { // Pause time > 30 seconds no click added only wake up
             pauseTimeSum +=  currentClickTime - lastClickTime // Add pause time to pauseTimeSum
             if (clickCount == 0) {lastClickTime = currentClickTime}
             else {
@@ -232,7 +234,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun clickEvent() {
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastClickTime >= 1000) { // Limit to 1 click per second
+        if (currentTime - lastClickTime >= mantraTimout) { // Limit to 1 click per second
             incrementMantra()
             updateDisplay()
             //mantraAdapter.notifyItemInserted(0)
@@ -269,6 +271,8 @@ class MainActivity : AppCompatActivity() {
 
         val mantraListString = mantraList.joinToString(separator = ";") { "${it.first},${it.second}" }
         editor.putString("mantraList", mantraListString)
+        editor.putInt("mala", mala)
+        editor.putInt("pauseTimeout", pauseTimeout)
 
         editor.apply()
     }
@@ -280,6 +284,8 @@ class MainActivity : AppCompatActivity() {
         lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
         roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
         pauseTimeSum = sharedPreferences.getLong("pauseTimeSum", 0)
+        mala = sharedPreferences.getInt("mala", 108)
+        pauseTimeout = sharedPreferences.getInt("pauseTimeout", 30)
 
         roundList.clear()
         sharedPreferences.getString("roundList", "")?.let {
@@ -346,6 +352,59 @@ class MainActivity : AppCompatActivity() {
         // Unregister the ScreenLockReceiver when the activity is paused
         unregisterReceiver(screenLockReceiver)
     }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_settings -> {
+                showSettingsDialog() // Open the settings dialog when clicked
+                true
+            }
+            R.id.action_about -> {
+                // Handle "About" click here if needed
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun showSettingsDialog() {
+        val dialogBuilder = AlertDialog.Builder(this)
+
+        // Create the input fields for settings
+        val inputLayout = layoutInflater.inflate(R.layout.dialog_settings, null)
+        val editMala = inputLayout.findViewById<EditText>(R.id.editMala)
+        val editTimeout = inputLayout.findViewById<EditText>(R.id.editTimeout)
+
+        // Pre-fill the EditTexts with the current values
+        editMala.setText(mala.toString())
+        editTimeout.setText(pauseTimeout.toString())
+
+        dialogBuilder.setView(inputLayout)
+            .setTitle("Settings")
+            .setPositiveButton("Save") { dialog, _ ->
+                // Update mala and timeout only if they are not null
+                val newMala = editMala.text.toString().toIntOrNull()
+                val newTimeout = editTimeout.text.toString().toIntOrNull()
+
+                if (newMala != null) mala = newMala
+                if (newTimeout != null) pauseTimeout = newTimeout
+
+                // Do something with the updated settings
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+
+        val dialog = dialogBuilder.create()
+        dialog.show()
+    }
+
 
     private inner class LogAdapter(private val logItems: MutableList<Pair<String, Boolean>>) :
         RecyclerView.Adapter<LogAdapter.LogViewHolder>() {

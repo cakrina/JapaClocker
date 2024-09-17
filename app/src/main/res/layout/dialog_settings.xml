@@ -1,0 +1,57 @@
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="10dp"
+    tools:ignore="HardcodedText,Autofill,TextContrastCheck,VisualLintTextFieldSize,TextContrastCheck">
+
+    <TextView
+        android:id="@+id/malaLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintWidth_percent=".5"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintHeight="48dp"
+        android:text="Beads in Mala"
+        android:textAlignment="center"
+
+        android:padding="10dp"/>
+
+    <EditText
+        android:id="@+id/editMala"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="beads in round"
+        android:inputType="number"
+        app:layout_constraintHeight="48dp"
+        app:layout_constraintLeft_toRightOf="@id/malaLabel"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="@id/malaLabel"/>
+
+    <TextView
+        android:id="@+id/pauseTimeoutLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/malaLabel"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintHeight="48dp"
+
+        android:text="Pause timeout"
+        android:textAlignment="center"
+        android:padding="10dp"/>
+
+    <EditText
+        android:id="@+id/editTimeout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="pause Timeout sec"
+        android:inputType="number"
+        app:layout_constraintHeight="48dp"
+        app:layout_constraintLeft_toRightOf="@id/pauseTimeoutLabel"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/editMala" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

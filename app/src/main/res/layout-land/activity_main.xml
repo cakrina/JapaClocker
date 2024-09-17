@@ -14,8 +14,10 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:elevation="4dp"
         android:background="@color/material_on_surface_stroke"
+        android:backgroundTintMode="src_over"
+        android:backgroundTint="@color/material_on_surface_stroke"
+        android:elevation="4dp"
         android:title="Japa Clocker"
         android:theme="@style/ThemeOverlay.AppCompat.ActionBar" />
     <TextView
