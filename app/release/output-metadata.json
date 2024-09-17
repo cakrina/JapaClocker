@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 3,
+      "versionCode": 4,
       "versionName": "1.2",
-      "outputFile": "com.cak.japaclocker_1.2-3_release.apk"
+      "outputFile": "com.cak.japaclocker_1.2-4_release.apk"
     }
   ],
   "elementType": "File",
@@ -22,14 +22,14 @@
       "minApi": 28,
       "maxApi": 30,
       "baselineProfiles": [
-        "baselineProfiles/1/com.cak.japaclocker_1.2-3_release.dm"
+        "baselineProfiles/1/com.cak.japaclocker_1.2-4_release.dm"
       ]
     },
     {
       "minApi": 31,
       "maxApi": 2147483647,
       "baselineProfiles": [
-        "baselineProfiles/0/com.cak.japaclocker_1.2-3_release.dm"
+        "baselineProfiles/0/com.cak.japaclocker_1.2-4_release.dm"
       ]
     }
   ],
