@@ -204,7 +204,6 @@ class ForegroundService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         // Stop and release MediaPlayer resources
-        saveState()
         silentPlayer.stop()
         silentPlayer.release()
         clickPlayer.release()

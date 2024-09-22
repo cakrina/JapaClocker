@@ -48,6 +48,7 @@ class MainActivity : AppCompatActivity() {
     private var roundStartTime: Long = 0
     private var roundEndTime: Long = 0
     private var pauseTimeSum: Long = 0
+    private var lastRestore: Long = 0
 
     private lateinit var clickSound: MediaPlayer
     private lateinit var resetSound: MediaPlayer
@@ -210,6 +211,7 @@ class MainActivity : AppCompatActivity() {
             rvMantras.scrollToPosition(0)
             Thread.sleep(50)
             lastMantraIsPause = false
+            saveState()
         }
 
         if (mantraCount == 1 && !lastMantraIsPause) {
@@ -237,9 +239,6 @@ class MainActivity : AppCompatActivity() {
         if (currentTime - lastClickTime >= mantraTimout) { // Limit to 1 click per second
             incrementMantra()
             updateDisplay()
-            //mantraAdapter.notifyItemInserted(0)
-            //rvMantras.scrollToPosition(0)
-
             clickSound.start()
         }
     }
@@ -278,43 +277,48 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun restoreState() {
-        clickCount = sharedPreferences.getInt("clickCount", 0)
-        roundCount = clickCount / mala
-        mantraCount = clickCount % mala
-        lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
-        roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
-        pauseTimeSum = sharedPreferences.getLong("pauseTimeSum", 0)
-        mala = sharedPreferences.getInt("mala", 108)
-        pauseTimeout = sharedPreferences.getInt("pauseTimeout", 30)
+        val now = System.currentTimeMillis()
+        if (now - lastRestore > 500) {
+            clickCount = sharedPreferences.getInt("clickCount", 0)
+            roundCount = clickCount / mala
+            mantraCount = clickCount % mala
+            lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
+            roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
+            pauseTimeSum = sharedPreferences.getLong("pauseTimeSum", 0)
+            mala = sharedPreferences.getInt("mala", 108)
+            pauseTimeout = sharedPreferences.getInt("pauseTimeout", 30)
 
-        roundList.clear()
-        sharedPreferences.getString("roundList", "")?.let {
-            if (it.isNotEmpty()) {
-                it.split(";").forEach { item ->
-                    val parts = item.split(",")
-                    if (parts.size == 2) {
-                        roundList.add(Pair(parts[0], parts[1].toBoolean()))
+            roundList.clear()
+            sharedPreferences.getString("roundList", "")?.let {
+                if (it.isNotEmpty()) {
+                    it.split(";").forEach { item ->
+                        val parts = item.split(",")
+                        if (parts.size == 2) {
+                            roundList.add(Pair(parts[0], parts[1].toBoolean()))
+                        }
                     }
                 }
             }
-        }
 
-        mantraList.clear()
-        sharedPreferences.getString("mantraList", "")?.let {
-            if (it.isNotEmpty()) {
-                it.split(";").forEach { item ->
-                    val parts = item.split(",")
-                    if (parts.size == 2) {
-                        mantraList.add(Pair(parts[0], parts[1].toBoolean()))
+            mantraList.clear()
+            sharedPreferences.getString("mantraList", "")?.let {
+                if (it.isNotEmpty()) {
+                    it.split(";").forEach { item ->
+                        val parts = item.split(",")
+                        if (parts.size == 2) {
+                            mantraList.add(Pair(parts[0], parts[1].toBoolean()))
+                        }
                     }
                 }
             }
+            lastRestore = now
         }
+
+
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        saveState()
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
@@ -323,12 +327,6 @@ class MainActivity : AppCompatActivity() {
         updateDisplay()
         mantraAdapter.notifyDataSetChanged()
         roundAdapter.notifyDataSetChanged()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        // Save click count and log list
-        saveState()
     }
 
     override fun onResume() {
@@ -344,7 +342,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        saveState()
         clickSound.release()
         resetSound.release()
         val serviceIntent = Intent(this, ForegroundService::class.java)
