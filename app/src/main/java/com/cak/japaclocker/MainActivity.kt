@@ -117,6 +117,9 @@ class MainActivity : AppCompatActivity() {
             showConfirmationDialog()
             true
         }
+        tvRounds.setOnClickListener {
+            clickEvent()
+        }
 
         tvRounds.setOnLongClickListener {
             showEnterRoundsDialog()
@@ -441,6 +444,9 @@ class MainActivity : AppCompatActivity() {
                 itemView.setOnLongClickListener {
                     copyToClipboard(itemView.context, logItems)
                     true
+                }
+                itemView.setOnClickListener{
+                    clickEvent()
                 }
             }
         }

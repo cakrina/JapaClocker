@@ -53,6 +53,8 @@
         app:layout_constraintLeft_toLeftOf="@id/tvRoundslabel"
         app:layout_constraintRight_toRightOf="@id/tvRoundslabel"
         app:layout_constraintHeight_percent=".375"
+        android:clickable="true"
+        android:longClickable="true"
         android:paddingTop="20sp"
         android:textAlignment="center"
         android:textSize="120sp"/>
@@ -107,6 +109,8 @@
         app:layout_constraintLeft_toLeftOf="@id/tvRoundslabel"
         app:layout_constraintRight_toRightOf="@id/tvRoundslabel"
         app:layout_constraintBottom_toBottomOf="parent"
+        android:clickable="true"
+        android:longClickable="true"
         android:textAlignment="center"
         android:paddingTop="20sp"
         android:textSize="120sp" />
