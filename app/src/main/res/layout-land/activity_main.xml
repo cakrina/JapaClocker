@@ -30,8 +30,8 @@
         app:layout_constraintWidth_percent=".35"
         android:background="@color/material_on_surface_stroke"
         android:text="Rounds"
-        android:textAlignment="center"
-        android:textSize="22sp"
+        android:gravity="center"
+        android:textSize="18sp"
         android:paddingBottom="6sp"/>
     <TextView
         android:id="@+id/tvRounds"
@@ -59,8 +59,8 @@
         app:layout_constraintWidth_percent=".15"
         android:background="@color/material_on_surface_stroke"
         android:text="Minutes"
-        android:textAlignment="center"
-        android:textSize="22sp"
+        android:gravity="center"
+        android:textSize="18sp"
         android:paddingBottom="6dp">
 
     </TextView>
@@ -94,8 +94,8 @@
         app:layout_constraintWidth_percent=".35"
         android:background="@color/material_on_surface_stroke"
         android:text="Mantras"
-        android:textAlignment="center"
-        android:textSize="22sp"/>
+        android:gravity="center"
+        android:textSize="18sp"/>
     <TextView
         android:id="@+id/tvMantras"
         android:layout_width="0dp"
@@ -118,8 +118,8 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:text="Seconds"
-        android:textAlignment="center"
-        android:textSize="22sp"
+        android:gravity="center"
+        android:textSize="18sp"
         app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintLeft_toRightOf="@id/tvRoundslabel"
         app:layout_constraintBottom_toBottomOf="@id/tvRoundslabel"

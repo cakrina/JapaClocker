@@ -254,7 +254,8 @@ class MainActivity : AppCompatActivity() {
     }
     @SuppressLint("SetTextI18n")
     private fun updateDisplay() {
-
+        roundCount = (clickCount - 1) / mala
+        mantraCount = clickCount - roundCount * mala
         tvRounds.text = "$roundCount"
         tvMantras.text = "$mantraCount"
     }
@@ -317,7 +318,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
+    /*override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
     }
 
@@ -327,7 +328,7 @@ class MainActivity : AppCompatActivity() {
         updateDisplay()
         mantraAdapter.notifyDataSetChanged()
         roundAdapter.notifyDataSetChanged()
-    }
+    }*/
 
     override fun onResume() {
         super.onResume()
