@@ -9,6 +9,7 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.Menu
@@ -105,8 +106,9 @@ class MainActivity : AppCompatActivity() {
         editor = sharedPreferences.edit()
 
         // Restore saved state
-        restoreState()
-        updateDisplay()
+        /*restoreState()
+        Log.d("State","MA restored onCreate")
+        updateDisplay()*/
 
         lastClickTime = if (lastClickTime == 0L) System.currentTimeMillis() else lastClickTime
 
@@ -148,7 +150,6 @@ class MainActivity : AppCompatActivity() {
                 mantraCount = 0
                 lastClickTime = System.currentTimeMillis()
                 updateDisplay()
-                saveState()
                 dialog.dismiss()
                 roundsSetManual = true
             }
@@ -183,7 +184,6 @@ class MainActivity : AppCompatActivity() {
         updateDisplay()
         mantraAdapter.notifyDataSetChanged()
         roundAdapter.notifyDataSetChanged()
-        saveState()
 
         // Play reset sound
         resetSound.start()
@@ -214,7 +214,6 @@ class MainActivity : AppCompatActivity() {
             rvMantras.scrollToPosition(0)
             Thread.sleep(50)
             lastMantraIsPause = false
-            saveState()
         }
 
         if (mantraCount == 1 && !lastMantraIsPause) {
@@ -229,8 +228,6 @@ class MainActivity : AppCompatActivity() {
                 roundList.add(0, Pair("$roundCount - $roundTimeStr",lastRoundIsPause))
                 roundAdapter.notifyItemInserted(0)
                 rvRounds.scrollToPosition(0)
-                val roundListString = roundList.joinToString(separator = ";") { "${it.first},${it.second}" }
-                editor.putString("roundList", roundListString)
                 roundStartTime = roundEndTime
                 pauseTimeSum = 0L  // Reset pauseTimeSum for the next round
             }
@@ -286,8 +283,8 @@ class MainActivity : AppCompatActivity() {
         val now = System.currentTimeMillis()
         if (now - lastRestore > 500) {
             clickCount = sharedPreferences.getInt("clickCount", 0)
-            roundCount = clickCount / mala
-            mantraCount = clickCount % mala
+            roundCount = (clickCount - 1) / mala
+            mantraCount = clickCount - roundCount * mala
             lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
             roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
             pauseTimeSum = sharedPreferences.getLong("pauseTimeSum", 0)
@@ -334,12 +331,18 @@ class MainActivity : AppCompatActivity() {
         mantraAdapter.notifyDataSetChanged()
         roundAdapter.notifyDataSetChanged()
     }*/
+    override fun onPause() {
+        super.onPause()
+        saveState()
+        Log.d("State","saved by MA onPause")
+    }
 
     override fun onResume() {
         super.onResume()
         // Restore state
         currentColor = tvRounds.currentTextColor
         restoreState()
+        Log.d("State","MA restored onResume")
         updateDisplay()
         mantraAdapter.notifyDataSetChanged()
         roundAdapter.notifyDataSetChanged()

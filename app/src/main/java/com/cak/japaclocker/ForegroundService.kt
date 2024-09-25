@@ -15,6 +15,7 @@ import android.media.MediaPlayer
 import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 
 class ForegroundService : Service() {
@@ -35,6 +36,7 @@ class ForegroundService : Service() {
     private var roundCount = 0
     private var mantraCount = 0
     private var lastClickTime: Long = 0
+    private var lastRestore: Long = 0
     private var lastClickTimestamp: Long = 0
     private val mantraList = mutableListOf<Pair<String, Boolean>>()
     private val roundList = mutableListOf<Pair<String, Boolean>>()
@@ -47,6 +49,7 @@ class ForegroundService : Service() {
         createNotificationChannel()
         val notification = createNotification()
         startForeground(1, notification)
+
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         silentPlayer = MediaPlayer.create(this, R.raw.silent)
@@ -79,6 +82,8 @@ class ForegroundService : Service() {
         editor = sharedPreferences.edit()
 
         restoreState()
+        Log.d("State","FS restored onCreate")
+
 
 
 
@@ -94,6 +99,7 @@ class ForegroundService : Service() {
                         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, defaultVolume, 0)
                         incrementMantra()
                         saveState()
+                        Log.d("State","FS saved by FS onReceive")
                         clickPlayer.start()
                         lastClickTimestamp = currentTime
 
@@ -102,10 +108,8 @@ class ForegroundService : Service() {
             }
         }
 
-
         // Register the BroadcastReceiver for volume changes
         registerReceiver(vReceiver, IntentFilter("android.media.VOLUME_CHANGED_ACTION"))
-
         // Start playing the silent sound to keep media session active
         silentPlayer.start()
     }
@@ -133,7 +137,6 @@ class ForegroundService : Service() {
             Thread.sleep(50)
             lastMantraIsPause = false
         }
-
         if (mantraCount == 1 && !lastMantraIsPause) {
             if (roundCount == 0) {
                 roundStartTime = currentClickTime
@@ -143,8 +146,6 @@ class ForegroundService : Service() {
                 lastRoundIsPause = pauseTimeSum != 0L
                 val roundTimeStr = String.format("%.1f", roundTime / 60000f)
                 roundList.add(0, Pair("$roundCount - $roundTimeStr",lastRoundIsPause))
-                val roundListString = roundList.joinToString(separator = ";") { "${it.first},${it.second}" }
-                editor.putString("roundList", roundListString)
                 roundStartTime = roundEndTime
                 pauseTimeSum = 0L  // Reset pauseTimeSum for the next round
             }
@@ -155,6 +156,7 @@ class ForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         return START_STICKY
     }
+
 
     private fun saveState() {
         editor.putInt("clickCount", clickCount)
@@ -167,40 +169,51 @@ class ForegroundService : Service() {
 
         val mantraListString = mantraList.joinToString(separator = ";") { "${it.first},${it.second}" }
         editor.putString("mantraList", mantraListString)
+        editor.putInt("mala", mala)
+        editor.putInt("pauseTimeout", pauseTimeout)
+
         editor.apply()
     }
 
     private fun restoreState() {
-        clickCount = sharedPreferences.getInt("clickCount", 0)
-        roundCount = clickCount / mala
-        mantraCount = clickCount % mala
-        lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
-        roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
-        pauseTimeSum = sharedPreferences.getLong("pauseTimeSum", 0)
+        val now = System.currentTimeMillis()
+        if (now - lastRestore > 500) {
+            clickCount = sharedPreferences.getInt("clickCount", 0)
+            roundCount = (clickCount - 1) / mala
+            mantraCount = clickCount - roundCount * mala
+            lastClickTime = sharedPreferences.getLong("lastClickTime", 0)
+            roundStartTime = sharedPreferences.getLong("roundStartTime", 0)
+            pauseTimeSum = sharedPreferences.getLong("pauseTimeSum", 0)
+            mala = sharedPreferences.getInt("mala", 108)
+            pauseTimeout = sharedPreferences.getInt("pauseTimeout", 30)
 
-        roundList.clear()
-        sharedPreferences.getString("roundList", "")?.let {
-            if (it.isNotEmpty()) {
-                it.split(";").forEach { item ->
-                    val parts = item.split(",")
-                    if (parts.size == 2) {
-                        roundList.add(Pair(parts[0], parts[1].toBoolean()))
+            roundList.clear()
+            sharedPreferences.getString("roundList", "")?.let {
+                if (it.isNotEmpty()) {
+                    it.split(";").forEach { item ->
+                        val parts = item.split(",")
+                        if (parts.size == 2) {
+                            roundList.add(Pair(parts[0], parts[1].toBoolean()))
+                        }
                     }
                 }
             }
-        }
 
-        mantraList.clear()
-        sharedPreferences.getString("mantraList", "")?.let {
-            if (it.isNotEmpty()) {
-                it.split(";").forEach { item ->
-                    val parts = item.split(",")
-                    if (parts.size == 2) {
-                        mantraList.add(Pair(parts[0], parts[1].toBoolean()))
+            mantraList.clear()
+            sharedPreferences.getString("mantraList", "")?.let {
+                if (it.isNotEmpty()) {
+                    it.split(";").forEach { item ->
+                        val parts = item.split(",")
+                        if (parts.size == 2) {
+                            mantraList.add(Pair(parts[0], parts[1].toBoolean()))
+                        }
                     }
                 }
             }
+            lastRestore = now
         }
+
+
     }
 
     override fun onDestroy() {
@@ -210,6 +223,7 @@ class ForegroundService : Service() {
         silentPlayer.release()
         clickPlayer.release()
         unregisterReceiver(vReceiver)
+
     }
 
     override fun onBind(intent: Intent?): IBinder? {
