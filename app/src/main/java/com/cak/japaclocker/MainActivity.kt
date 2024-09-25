@@ -229,6 +229,8 @@ class MainActivity : AppCompatActivity() {
                 roundList.add(0, Pair("$roundCount - $roundTimeStr",lastRoundIsPause))
                 roundAdapter.notifyItemInserted(0)
                 rvRounds.scrollToPosition(0)
+                val roundListString = roundList.joinToString(separator = ";") { "${it.first},${it.second}" }
+                editor.putString("roundList", roundListString)
                 roundStartTime = roundEndTime
                 pauseTimeSum = 0L  // Reset pauseTimeSum for the next round
             }

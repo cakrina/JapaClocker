@@ -143,6 +143,8 @@ class ForegroundService : Service() {
                 lastRoundIsPause = pauseTimeSum != 0L
                 val roundTimeStr = String.format("%.1f", roundTime / 60000f)
                 roundList.add(0, Pair("$roundCount - $roundTimeStr",lastRoundIsPause))
+                val roundListString = roundList.joinToString(separator = ";") { "${it.first},${it.second}" }
+                editor.putString("roundList", roundListString)
                 roundStartTime = roundEndTime
                 pauseTimeSum = 0L  // Reset pauseTimeSum for the next round
             }
