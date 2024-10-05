@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var clickSound: MediaPlayer
     private lateinit var resetSound: MediaPlayer
-
+    private lateinit var roundSound: MediaPlayer
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var editor: SharedPreferences.Editor
     private lateinit var screenLockReceiver: ScreenLockReceiver
@@ -100,7 +100,7 @@ class MainActivity : AppCompatActivity() {
         clickSound = MediaPlayer.create(this, R.raw.click) // Ensure click.mp3 is in res/raw folder
         resetSound =
             MediaPlayer.create(this, R.raw.whoosh) // Ensure whoosh.mp3 is in res/raw folder
-
+        roundSound = MediaPlayer.create(this, R.raw.round)
         // Initialize SharedPreferences
         sharedPreferences = getSharedPreferences("JapaClockPrefs", MODE_PRIVATE)
         editor = sharedPreferences.edit()
@@ -239,9 +239,12 @@ class MainActivity : AppCompatActivity() {
     private fun clickEvent() {
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastClickTime >= mantraTimout) { // Limit to 1 click per second
+            if (mantraCount == mala) {
+                roundSound.start()
+            } else clickSound.start()
             incrementMantra()
             updateDisplay()
-            clickSound.start()
+
         }
     }
 
@@ -353,6 +356,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         clickSound.release()
         resetSound.release()
+        roundSound.release()
         val serviceIntent = Intent(this, ForegroundService::class.java)
         stopService(serviceIntent)
         // Unregister the ScreenLockReceiver when the activity is paused

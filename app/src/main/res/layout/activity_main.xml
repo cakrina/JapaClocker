@@ -6,6 +6,25 @@
     android:layout_height="match_parent"
     tools:ignore="HardcodedText">
 
+    <ImageView
+        android:id="@+id/topImageView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:src="@drawable/peacock"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar"
+        app:layout_constraintBottom_toBottomOf="@id/tvRounds"
+        app:layout_constraintLeft_toLeftOf="@id/rvRounds"
+        app:layout_constraintRight_toRightOf="@id/tvRounds" />
+    <ImageView
+        android:id="@+id/topImageView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:src="@drawable/peacock"
+        app:layout_constraintTop_toBottomOf="@+id/tvMantraslabel"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="@id/rvRounds"
+        app:layout_constraintRight_toRightOf="@id/tvRounds" />
+
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
@@ -66,15 +85,9 @@
         app:layout_constraintTop_toBottomOf="@id/rvRoundslabel"
         app:layout_constraintLeft_toLeftOf="@id/rvRoundslabel"
         app:layout_constraintRight_toRightOf="@id/rvRoundslabel"
-        app:layout_constraintBottom_toBottomOf="@id/tvRounds" />
-    <View
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintHeight_percent=".3"
-        app:layout_constraintLeft_toLeftOf="@id/rvRoundslabel"
-        app:layout_constraintRight_toRightOf="@id/rvRoundslabel"
         app:layout_constraintBottom_toBottomOf="@id/tvRounds"
-        android:background="@drawable/gradient" />
+        android:requiresFadingEdge="vertical"
+        android:fadingEdgeLength="150dp"/>
 
     <TextView
         android:id="@+id/tvMantraslabel"
@@ -121,13 +134,8 @@
         app:layout_constraintTop_toBottomOf="@id/rvMantraslabel"
         app:layout_constraintLeft_toLeftOf="@id/rvRoundslabel"
         app:layout_constraintRight_toRightOf="@id/rvRoundslabel"
-        app:layout_constraintBottom_toBottomOf="parent"/>
-    <View
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintHeight_percent=".3"
-        app:layout_constraintLeft_toLeftOf="@id/rvRoundslabel"
-        app:layout_constraintRight_toRightOf="@id/rvRoundslabel"
         app:layout_constraintBottom_toBottomOf="parent"
-        android:background="@drawable/gradient" />
+        android:requiresFadingEdge="vertical"
+        android:fadingEdgeLength="150dp"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

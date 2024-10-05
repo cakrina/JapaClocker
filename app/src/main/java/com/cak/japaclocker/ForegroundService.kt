@@ -22,6 +22,7 @@ class ForegroundService : Service() {
 
     private lateinit var silentPlayer: MediaPlayer
     private lateinit var clickPlayer: MediaPlayer
+    private lateinit var roundPlayer: MediaPlayer
     private lateinit var vReceiver: BroadcastReceiver
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var editor: SharedPreferences.Editor
@@ -54,6 +55,7 @@ class ForegroundService : Service() {
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         silentPlayer = MediaPlayer.create(this, R.raw.silent)
         clickPlayer = MediaPlayer.create(this, R.raw.click)
+        roundPlayer = MediaPlayer.create(this, R.raw.round)
         // Get the current volume
         val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
@@ -97,10 +99,12 @@ class ForegroundService : Service() {
                     val currentTime = System.currentTimeMillis()
                     if (currentTime - lastClickTimestamp >= mantraTimeout) { // Limit to 1 click per second
                         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, defaultVolume, 0)
+                        if (mantraCount == mala) {
+                            roundPlayer.start()
+                        } else clickPlayer.start()
                         incrementMantra()
                         saveState()
                         Log.d("State","FS saved by FS onReceive")
-                        clickPlayer.start()
                         lastClickTimestamp = currentTime
 
                     }
@@ -222,6 +226,7 @@ class ForegroundService : Service() {
         silentPlayer.stop()
         silentPlayer.release()
         clickPlayer.release()
+        roundPlayer.release()
         unregisterReceiver(vReceiver)
 
     }
