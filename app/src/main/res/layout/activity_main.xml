@@ -11,7 +11,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:src="@drawable/peacock"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar"
+        app:layout_constraintTop_toBottomOf="@id/tvRoundslabel"
         app:layout_constraintBottom_toBottomOf="@id/tvRounds"
         app:layout_constraintLeft_toLeftOf="@id/rvRounds"
         app:layout_constraintRight_toRightOf="@id/tvRounds" />

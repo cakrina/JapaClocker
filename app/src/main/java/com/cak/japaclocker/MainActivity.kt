@@ -68,6 +68,20 @@ class MainActivity : AppCompatActivity() {
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
 
+        // Gesture detector for swipe near the top of the screen
+        val contentView = findViewById<View>(android.R.id.content)
+        contentView.setOnTouchListener { _, event ->
+            val edgeThreshold = resources.displayMetrics.heightPixels * 0.04f  // 4% of the screen height
+            if (event.rawY < edgeThreshold) {
+                // Show the toolbar when touch is near the top edge
+                toolbar.animate().translationY(0f).duration = 200
+            } else {
+                // Hide the toolbar when touch is not near the top edge
+                toolbar.animate().translationY(-toolbar.height.toFloat()).duration = 200
+            }
+            true
+        }
+
         // Initialize TextViews and RecyclerViews
         tvRounds = findViewById(R.id.tvRounds)
         currentColor = tvRounds.currentTextColor
