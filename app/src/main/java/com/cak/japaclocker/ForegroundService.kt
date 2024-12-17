@@ -136,7 +136,7 @@ class ForegroundService : Service() {
             clickCount++ // count click
             roundCount = (clickCount - 1) / mala
             mantraCount = clickCount - roundCount * mala
-            val clickTimeStr = clickTime.toString()
+            val clickTimeStr = clickTime.toString()+"s"
             mantraList.add(0, Pair("$roundCount/$mantraCount - $clickTimeStr",lastMantraIsPause))
             Thread.sleep(50)
             lastMantraIsPause = false
@@ -148,7 +148,7 @@ class ForegroundService : Service() {
                 roundEndTime = currentClickTime
                 val roundTime = roundEndTime - roundStartTime - pauseTimeSum
                 lastRoundIsPause = pauseTimeSum != 0L
-                val roundTimeStr = String.format("%.1f", roundTime / 60000f)
+                val roundTimeStr = String.format("%dm %02ds", roundTime / 60000, (roundTime % 60000) / 1000)
                 roundList.add(0, Pair("$roundCount - $roundTimeStr",lastRoundIsPause))
                 roundStartTime = roundEndTime
                 pauseTimeSum = 0L  // Reset pauseTimeSum for the next round

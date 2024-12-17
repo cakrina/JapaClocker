@@ -17,12 +17,13 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.NumberPicker
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
+import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -65,21 +66,26 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         screenLockReceiver = ScreenLockReceiver()
 
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
-        setSupportActionBar(toolbar)
+        val overflowButton: ImageButton = findViewById(R.id.overflowMenuButton)
 
-        // Gesture detector for swipe near the top of the screen
-        val contentView = findViewById<View>(android.R.id.content)
-        contentView.setOnTouchListener { _, event ->
-            val edgeThreshold = resources.displayMetrics.heightPixels * 0.04f  // 4% of the screen height
-            if (event.rawY < edgeThreshold) {
-                // Show the toolbar when touch is near the top edge
-                toolbar.animate().translationY(0f).duration = 200
-            } else {
-                // Hide the toolbar when touch is not near the top edge
-                toolbar.animate().translationY(-toolbar.height.toFloat()).duration = 200
+        overflowButton.setOnClickListener { view ->
+            val popupMenu = PopupMenu(this, view)
+            popupMenu.inflate(R.menu.main_menu)
+
+            popupMenu.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.action_settings -> {
+                        showSettingsDialog()// Handle Settings
+                        true
+                    }
+                    R.id.action_about -> {
+                        // Handle About
+                        true
+                    }
+                    else -> false
+                }
             }
-            true
+            popupMenu.show()
         }
 
         // Initialize TextViews and RecyclerViews
@@ -222,7 +228,7 @@ class MainActivity : AppCompatActivity() {
             clickCount++ // count click
             roundCount = (clickCount - 1) / mala
             mantraCount = clickCount - roundCount * mala
-            val clickTimeStr = clickTime.toString()
+            val clickTimeStr = clickTime.toString()+"s"
             mantraList.add(0, Pair("$roundCount/$mantraCount - $clickTimeStr",lastMantraIsPause))
             mantraAdapter.notifyItemInserted(0)
             rvMantras.scrollToPosition(0)
@@ -238,7 +244,7 @@ class MainActivity : AppCompatActivity() {
                 roundEndTime = currentClickTime
                 val roundTime = roundEndTime - roundStartTime - pauseTimeSum
                 lastRoundIsPause = pauseTimeSum != 0L
-                val roundTimeStr = String.format("%.1f", roundTime / 60000f)
+                val roundTimeStr = String.format("%dm %02ds", roundTime / 60000, (roundTime % 60000) / 1000)
                 roundList.add(0, Pair("$roundCount - $roundTimeStr",lastRoundIsPause))
                 roundAdapter.notifyItemInserted(0)
                 rvRounds.scrollToPosition(0)
@@ -434,7 +440,7 @@ class MainActivity : AppCompatActivity() {
         RecyclerView.Adapter<LogAdapter.LogViewHolder>() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LogViewHolder {
-            val view = layoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false)
+            val view = layoutInflater.inflate(R.layout.list_item, parent, false)
             return LogViewHolder(view)
         }
 
@@ -447,20 +453,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         inner class LogViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            val textView: TextView = itemView.findViewById(android.R.id.text1)
+            val textView: TextView = itemView.findViewById(R.id.text1)
 
             fun bind(logItem: Pair<String, Boolean>) {
                 textView.text = logItem.first
                 textView.setTextColor(if (logItem.second) android.graphics.Color.RED else currentColor)
 
                 itemView.post {
-                    val recyclerViewWidth = itemView.width
-                    val calculatedTextSize = when {
-                        recyclerViewWidth > 300 -> 14f
-                        recyclerViewWidth > 200 -> 10f
-                        else -> 8f
-                    }
-                    textView.textSize = calculatedTextSize
                     textView.gravity = Gravity.START
                 }
 
