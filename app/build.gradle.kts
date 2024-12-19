@@ -17,7 +17,7 @@ android {
         //noinspection OldTargetApi
         targetSdk = 34
 
-        versionCode = 1
+        versionCode = 2
         versionName = "1.3"
 
 
